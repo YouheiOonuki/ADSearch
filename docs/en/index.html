@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADSearch – Get-ADUser without RSAT, a PowerShell ADSI library | yorozu-craft</title>
+  <meta name="description" content="Run Get-ADUser, Get-ADGroupMember, Get-ADComputer and 39 more commands without RSAT. A read-only PowerShell module that queries Active Directory, DNS, GPO links and Exchange configuration through ADSI/LDAP as an ordinary domain user. Free, MIT license.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://yorozu-craft.com/ADSearch/en/">
+  <link rel="alternate" hreflang="ja" href="https://yorozu-craft.com/ADSearch/">
+  <link rel="alternate" hreflang="en" href="https://yorozu-craft.com/ADSearch/en/">
+  <link rel="alternate" hreflang="x-default" href="https://yorozu-craft.com/ADSearch/">
+
+  <meta property="og:title" content="ADSearch – Get-ADUser without RSAT">
+  <meta property="og:description" content="A read-only PowerShell module that queries Active Directory, DNS, GPO and Exchange configuration through ADSI as an ordinary domain user, with RSAT-style commands.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yorozu-craft.com/ADSearch/en/">
+  <meta property="og:site_name" content="yorozu-craft">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ja_JP">
+  <meta property="og:image" content="https://yorozu-craft.com/ADSearch/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ADSearch",
+    "description": "PowerShell module that reads Active Directory, DNS, GPO and Exchange configuration without RSAT (read-only)",
+    "url": "https://yorozu-craft.com/ADSearch/en/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Windows",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "https://github.com/YouheiOonuki/ADSearch"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Does it ever change anything in AD?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Every exported command only gets, searches or runs a self-test. The scripts in the forTest folder that create test data are for test environments only; do not run them in production."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it give the same results as RSAT's Get-ADUser?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The main parameters and output properties follow RSAT. The differences are listed under RSAT-compatible properties and Deliberate omissions in the README."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "The execution policy stops it from loading.",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use the bundled Import-ADSearch.ps1. It reads the files as text and loads them as script blocks, so the file execution policy does not apply."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Google AdSense（サイト所有確認 + 広告配信スクリプト） -->
+  <meta name="google-adsense-account" content="ca-pub-5375267956079717">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5375267956079717"
+     crossorigin="anonymous"></script>
+
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    pre { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 0.8rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; margin: 0.5rem 0; }
+    code { font-family: Consolas, "Courier New", monospace; overflow-wrap: anywhere; }
+    pre { max-width: 100%; }
+    pre code { overflow-wrap: normal; }
+    .cmds { display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; margin: 0.4rem 0 0.8rem; }
+    .cmds code { background: var(--accent-soft); border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.82rem; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
+    .btn-row a.btn { text-decoration: none; }
+    .kind { font-size: 0.8rem; color: var(--muted); }
+    .lang-switch { font-size: 0.82rem; margin-top: 0.35rem; }
+    .more { margin-top: 0.7rem; border-top: 1px dashed var(--border); padding-top: 0.5rem; }
+    .more summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; font-weight: 600; }
+    .more[open] summary { margin-bottom: 0.4rem; }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>ADSearch</h1>
+    <p class="subtitle">Get-ADUser without RSAT: query Active Directory from PowerShell</p>
+    <p class="lang-switch"><a href="../" hreflang="ja" lang="ja">日本語</a></p>
+  </header>
+
+  <main class="app-main">
+
+    <section class="card content" aria-labelledby="h-about">
+      <h2 id="h-about">Get-ADUser without RSAT</h2>
+      <p>ADSearch is a PowerShell module for machines where you can't install RSAT (Remote Server Administration Tools). It reads Active Directory, DNS, Group Policy links and Exchange configuration <strong>as an ordinary domain user</strong>.</p>
+      <ul>
+        <li><strong>RSAT-style commands</strong>: <code>Get-ADUser</code>, <code>Get-ADGroupMember</code>, <code>Get-ADComputer</code> and others, with the same names and main parameters</li>
+        <li><strong>Read-only</strong>: nothing in AD is changed</li>
+        <li>Free, MIT license. PowerShell 5.1 or later</li>
+      </ul>
+      <p class="kind">Messages and warnings from the module are in Japanese. The English README explains the common ones.</p>
+      <div class="btn-row">
+        <a class="btn" href="https://github.com/YouheiOonuki/ADSearch" target="_blank" rel="noopener">View and download on GitHub</a>
+        <a class="btn btn-sub" href="https://github.com/YouheiOonuki/ADSearch/blob/main/README.en.md" target="_blank" rel="noopener">English README</a>
+      </div>
+    </section>
+
+    <section class="card content" aria-labelledby="h-adsi">
+      <h2 id="h-adsi">Query Active Directory with ADSI in PowerShell</h2>
+      <p>Without RSAT, the usual way to read AD from PowerShell is to write <code>[adsisearcher]</code> or <code>System.DirectoryServices.DirectorySearcher</code> code by hand. ADSearch wraps that in RSAT-style commands, using only .NET's <code>System.DirectoryServices</code> (ADSI/LDAP).</p>
+      <details class="more">
+        <summary>What it handles for you</summary>
+        <p>Hand-written code has to build the LDAP filter, list the attributes to load, convert FileTime values and <code>userAccountControl</code> bits, and handle paging and large groups.</p>
+      <ul>
+        <li><code>-Filter</code> accepts PowerShell-style expressions (<code>-like</code>, <code>-eq</code>, parentheses, <code>-and</code>/<code>-or</code>) and turns them into LDAP filters. Raw LDAP filters pass through unchanged</li>
+        <li>Dates come back as dates, and <code>LockedOut</code> and <code>PasswordExpired</code> are read from the attributes the DC computes</li>
+        <li><code>Get-ADGroupMember -Recursive</code> handles nested and circular groups, groups with more than 1,500 members, and members through <code>primaryGroupID</code> (such as Domain Users)</li>
+        <li><code>SID</code> and <code>ObjectGUID</code> are returned as the same .NET types as RSAT</li>
+      </ul>
+      </details>
+    </section>
+
+    <section class="card content" aria-labelledby="h-get">
+      <h2 id="h-get">Download and load</h2>
+      <ol>
+        <li>On GitHub, choose "Code → Download ZIP" and put the folder on your machine or a file share</li>
+        <li>Load it in PowerShell</li>
+      </ol>
+<pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1</code></pre>
+      <details class="more">
+        <summary>File share, git clone and the execution policy</summary>
+        <p>Or <code>git clone https://github.com/YouheiOonuki/ADSearch</code>. From a file share:</p>
+<pre><code>Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
+        <p>If the execution policy (RemoteSigned etc.) blocks it, use the bundled <code>Import-ADSearch.ps1</code>.</p>
+<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
+        <p>For downloaded files, unblocking them first with <code>Get-ChildItem -Recurse | Unblock-File</code> lets them load normally.</p>
+      </details>
+    </section>
+
+    <section class="card content" aria-labelledby="h-use">
+      <h2 id="h-use">Examples and commands (42)</h2>
+<pre><code># Get a user
+Get-ADUser -Identity jsmith -Server dc01.corp.local
+
+# Group members, recursively
+Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local</code></pre>
+      <p class="small">Domain and user names in the examples are fictitious.</p>
+      <details class="more">
+        <summary>More examples</summary>
+<pre><code># Filter
+Get-ADUser -Filter "DisplayName -like 'Smith*'" -Server dc01.corp.local
+
+# Enabled accounts that are locked out
+Get-ADUser -Filter "Enabled -eq '$true'" -Server dc01 | Where-Object LockedOut
+
+# DNS records (with IP addresses)
+Get-ADDnsRecord -Name pc001 -ComputerName dc01.corp.local
+
+# Self-test: loaded correctly, and the DC is reachable
+Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
+      </details>
+      <details class="more" id="commands">
+        <summary>All 42 commands</summary>
+      <h3>Directory</h3>
+      <p class="cmds"><code>Get-ADUser</code><code>Get-ADGroup</code><code>Get-ADGroupMember</code><code>Get-ADComputer</code><code>Get-ADOrganizationalUnit</code><code>Get-ADObject</code><code>Get-ADServiceAccount</code><code>Get-ADDomain</code><code>Get-ADDomainController</code><code>Get-ADForest</code><code>Get-ADDefaultDomainPasswordPolicy</code><code>Get-ADTrust</code></p>
+      <h3>Sites, replication, GPO and DNS</h3>
+      <p class="cmds"><code>Get-ADReplicationSite</code><code>Get-ADReplicationSiteLink</code><code>Get-ADReplicationSubnet</code><code>Get-ADReplicationConnection</code><code>Get-ADGpoLink</code><code>Get-ADDnsRecord</code></p>
+      <h3>Exchange configuration</h3>
+      <p class="cmds"><code>Get-ExchangeServer</code><code>Get-ReceiveConnector</code><code>Get-SendConnector</code><code>Get-AcceptedDomain</code><code>Get-RemoteDomain</code><code>Get-TransportRule</code><code>Get-MailboxDatabase</code><code>Get-DatabaseAvailabilityGroup</code><code>Get-AddressList</code><code>Get-GlobalAddressList</code><code>Get-OfflineAddressBook</code><code>Get-EmailAddressPolicy</code></p>
+      <h3>Exchange recipients</h3>
+      <p class="cmds"><code>Get-Recipient</code><code>Get-Mailbox</code><code>Get-RemoteMailbox</code><code>Get-MailUser</code><code>Get-MailContact</code><code>Get-DistributionGroup</code><code>Get-DynamicDistributionGroup</code><code>Get-DistributionGroupMember</code></p>
+      <h3>Diagnostics and inventory</h3>
+      <p class="cmds"><code>Invoke-ADSearchSelfTest</code><code>Get-ADUserHealth</code><code>Search-ADAccount</code><code>Get-ADComputerHealth</code></p>
+      </details>
+      <p>The Exchange commands read what Exchange stores in AD; they don't connect to an Exchange server. Parameters and output are in the <a href="../reference.html" hreflang="ja">reference manual</a> (Japanese).</p>
+    </section>
+
+    <section class="card content" id="faq" aria-labelledby="h-faq">
+      <h2 id="h-faq">FAQ</h2>
+      <dl class="faq">
+        <dt>Does it ever change anything in AD?</dt>
+        <dd>No. Every exported command only gets, searches or runs a self-test. The scripts in the forTest folder that create test data are for test environments only; do not run them in production.</dd>
+        <dt>Does it give the same results as RSAT&#x27;s Get-ADUser?</dt>
+        <dd>The main parameters and output properties follow RSAT. The differences are listed under RSAT-compatible properties and Deliberate omissions in the README.</dd>
+        <dt>The execution policy stops it from loading.</dt>
+        <dd>Use the bundled Import-ADSearch.ps1. It reads the files as text and loads them as script blocks, so the file execution policy does not apply.</dd>
+      </dl>
+    </section>
+
+    <section class="card content" id="notes" aria-labelledby="h-notes">
+      <h2 id="h-notes">Notes</h2>
+      <ul>
+        <li>Before using it on a work machine, check your employer's rules (on bringing in software and on querying the directory)</li>
+        <li>Running many searches in quick succession puts load on the DC. Narrow the scope with <code>-Filter</code> and <code>-SearchBase</code></li>
+        <li>The module runs entirely on your machine and sends nothing to this site</li>
+      </ul>
+      <p><a href="https://docs.google.com/forms/d/e/1FAIpQLSd8B90qh5lEIyr25iw1jOjdQjOyaPZ1_z2wMB4kH-EmEeJYWw/viewform?usp=pp_url&amp;entry.585564634=ADSearch" target="_blank" rel="noopener">Feedback and bug reports (Google Forms)</a>: the form is in Japanese, but you can write in English. GitHub Issues are also welcome.</p>
+      <p>The site-wide <a href="../../en/about.html">about page and disclaimer</a> and <a href="../../en/privacy-policy.html">privacy policy</a> apply to all tools.</p>
+      <details class="more" id="changelog">
+        <summary>Changes</summary>
+      <ul>
+        <li><time datetime="2026-09-24">24 September 2026</time> Version 1.4.1: fixed <code>'$true'</code> in <code>-Filter</code>, <code>Get-ADComputer PC001</code> (without <code>$</code>), and <code>-Identity</code> by name for trusts, sites and Exchange configuration. Added a test that runs without AD</li>
+        <li><time datetime="2026-09-24">24 September 2026</time> Released (version 1.4.0)</li>
+      </ul>
+      </details>
+    </section>
+
+    <section class="card content" aria-label="Other tools">
+      <p>Test a proxy PAC file against a list of URLs → <a href="../../pac-tester/en/">PAC File Tester</a></p>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <nav class="footer-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../../">yorozu-craft (Japanese)</a></li>
+        <li><a href="./" aria-current="page">ADSearch</a></li>
+        <li><a href="../reference.html" hreflang="ja">Reference (Japanese)</a></li>
+        <li><a href="../../en/about.html">About</a></li>
+        <li><a href="../../en/privacy-policy.html">Privacy policy</a></li>
+      </ul>
+    </nav>
+    <p>&copy; 2026 yorozu-craft. All rights reserved.</p>
+  </footer>
+
+  <!-- Cloudflare Web Analytics（Cookie を使わないアクセス解析） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b79bf821e1fd4b6683866d493b1de426"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

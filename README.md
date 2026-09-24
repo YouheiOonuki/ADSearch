@@ -1,5 +1,7 @@
 ﻿# ADSearch
 
+**日本語** | [English](README.en.md)
+
 RSAT 不要で Active Directory 情報を取得できる PowerShell ライブラリです。  
 `System.DirectoryServices`（ADSI/LDAP）を使用するため、ドメインに参加した一般端末・一般ユーザーで動作します。
 
