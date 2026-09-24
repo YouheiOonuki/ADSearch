@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADSearch — RSAT 不要で Active Directory を調べる PowerShell ライブラリ｜yorozu-craft</title>
+  <meta name="description" content="RSAT をインストールできない端末でも、一般のドメインユーザーで Active Directory・DNS・GPO・Exchange の情報を取得できる PowerShell モジュール。Get-ADUser などと同じ書き方で、すべて読み取り専用。無料・MIT ライセンス。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://yorozu-craft.com/ADSearch/">
+
+  <meta property="og:title" content="ADSearch — RSAT 不要で Active Directory を調べる PowerShell ライブラリ">
+  <meta property="og:description" content="一般のドメインユーザーで Active Directory・DNS・GPO・Exchange の情報を取得。Get-ADUser などと同じ書き方で、すべて読み取り専用。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yorozu-craft.com/ADSearch/">
+  <meta property="og:site_name" content="yorozu-craft">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:image" content="https://yorozu-craft.com/ADSearch/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ADSearch",
+    "description": "RSAT 不要で Active Directory・DNS・GPO・Exchange の情報を取得できる PowerShell モジュール（読み取り専用）",
+    "url": "https://yorozu-craft.com/ADSearch/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Windows",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+    "license": "https://opensource.org/licenses/MIT",
+    "codeRepository": "https://github.com/YouheiOonuki/ADSearch",
+    "inLanguage": "ja"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "RSAT（ActiveDirectory モジュール）が無くても使えますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "はい。.NET の System.DirectoryServices（ADSI／LDAP）だけを使うので、RSAT のインストールは要りません。ドメインに参加した Windows 端末で、一般のドメインユーザーのまま動きます。" }
+      },
+      {
+        "@type": "Question",
+        "name": "AD の情報を書き換えることはありますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "ありません。公開しているコマンドはすべて取得（Get）・検索（Search）と自己診断だけです。テスト用のデータを作るスクリプト（forTest フォルダ）は検証用の環境専用で、本番では使わないでください。" }
+      },
+      {
+        "@type": "Question",
+        "name": "RSAT の Get-ADUser と同じ結果になりますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "主なパラメーターと出力のプロパティを RSAT に合わせています。-Identity は DN・ObjectGUID・SID・sAMAccountName を受け付け、見つからないときは RSAT と同じく例外になります。違いは README とリファレンスの「RSAT 互換プロパティ」「意図的な省略」に書いています。" }
+      },
+      {
+        "@type": "Question",
+        "name": "実行ポリシーで読み込めません",
+        "acceptedAnswer": { "@type": "Answer", "text": "同梱の Import-ADSearch.ps1 を使うと、ファイルを文字列として読み込んで取り込むため、ファイルの実行ポリシーの影響を受けません。ローカルにコピーできる場合は Unblock-File してから読み込む方法もあります。" }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Google AdSense（サイト所有確認 + 広告配信スクリプト） -->
+  <meta name="google-adsense-account" content="ca-pub-5375267956079717">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5375267956079717"
+     crossorigin="anonymous"></script>
+
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./style.css">
+  <style>
+    pre { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 0.7rem 0.8rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; margin: 0.5rem 0; }
+    code { font-family: Consolas, "Courier New", monospace; overflow-wrap: anywhere; }
+    pre { max-width: 100%; }
+    pre code { overflow-wrap: normal; }
+    .cmds { display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; margin: 0.4rem 0 0.8rem; }
+    .cmds code { background: var(--accent-soft); border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.82rem; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
+    .btn-row a.btn { text-decoration: none; }
+    .kind { font-size: 0.8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>ADSearch</h1>
+    <p class="subtitle">RSAT 不要で Active Directory を調べる PowerShell ライブラリ</p>
+  </header>
+
+  <main class="app-main">
+
+    <section class="card content" aria-labelledby="h-about">
+      <h2 id="h-about">どんなもの？</h2>
+      <p>RSAT（リモートサーバー管理ツール）をインストールできない端末でも、<strong>一般のドメインユーザーのまま</strong> Active Directory・DNS・グループポリシー・Exchange の情報を取得できる PowerShell モジュールです。.NET の <code>System.DirectoryServices</code>（ADSI／LDAP）だけを使います。</p>
+      <ul>
+        <li><strong>書き方は RSAT とほぼ同じ</strong>：<code>Get-ADUser</code>・<code>Get-ADGroupMember</code>・<code>Get-ADComputer</code> などを同じ名前・同じパラメーターで使えます</li>
+        <li><strong>すべて読み取り専用</strong>：公開しているコマンドは取得・検索・自己診断だけで、AD を書き換えません</li>
+        <li><strong>インストール不要</strong>：ファイル共有に置いて <code>Import-Module</code> するだけ。実行ポリシーで読み込めない環境向けのローダーも同梱</li>
+        <li>無料・MIT ライセンス。PowerShell 5.1 以上</li>
+      </ul>
+      <p class="kind">yorozu-craft の「しごと・べんり」の PowerShell ライブラリです。</p>
+      <div class="btn-row">
+        <a class="btn" href="https://github.com/YouheiOonuki/ADSearch" target="_blank" rel="noopener">GitHub で見る・ダウンロード</a>
+        <a class="btn btn-sub" href="./reference.html">リファレンスマニュアル</a>
+      </div>
+    </section>
+
+    <section class="card content" aria-labelledby="h-get">
+      <h2 id="h-get">入手と読み込み</h2>
+      <ol>
+        <li>GitHub の「Code → Download ZIP」でダウンロードし、フォルダごと手元かファイル共有に置きます（<code>git clone https://github.com/YouheiOonuki/ADSearch</code> でも可）</li>
+        <li>PowerShell で読み込みます</li>
+      </ol>
+<pre><code># モジュールとして（推奨）
+Import-Module C:\tools\ADSearch\ADSearch.psd1
+
+# ファイル共有から
+Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
+      <p>実行ポリシー（RemoteSigned など）で読み込めない場合は、同梱の <code>Import-ADSearch.ps1</code> を使います。</p>
+<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
+      <p class="small">ダウンロードしたファイルは、先に <code>Get-ChildItem -Recurse | Unblock-File</code> でブロックを解除すると通常どおり読み込めます。</p>
+    </section>
+
+    <section class="card content" aria-labelledby="h-use">
+      <h2 id="h-use">使い方の例</h2>
+<pre><code># ユーザーを取得
+Get-ADUser -Identity yamada -Server dc01.corp.local
+
+# 条件で絞り込み
+Get-ADUser -Filter "DisplayName -like '山田*'" -Server dc01.corp.local
+
+# グループのメンバーを再帰的に
+Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local
+
+# ロックアウト中の有効なアカウント
+Get-ADUser -Filter "Enabled -eq '$true'" -Server dc01 | Where-Object LockedOut
+
+# DNS レコード（IP アドレスつき）
+Get-ADDnsRecord -Name pc001 -ComputerName dc01.corp.local
+
+# 読み込めたか・DC に届くかの自己診断
+Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
+      <p class="small">例のドメイン名・ユーザー名は架空のものです。</p>
+    </section>
+
+    <section class="card content" aria-labelledby="h-cmds">
+      <h2 id="h-cmds">使えるコマンド（42 個）</h2>
+      <h3>ディレクトリ</h3>
+      <p class="cmds"><code>Get-ADUser</code><code>Get-ADGroup</code><code>Get-ADGroupMember</code><code>Get-ADComputer</code><code>Get-ADOrganizationalUnit</code><code>Get-ADObject</code><code>Get-ADServiceAccount</code><code>Get-ADDomain</code><code>Get-ADDomainController</code><code>Get-ADForest</code><code>Get-ADDefaultDomainPasswordPolicy</code><code>Get-ADTrust</code></p>
+      <h3>サイト・レプリケーション・GPO・DNS</h3>
+      <p class="cmds"><code>Get-ADReplicationSite</code><code>Get-ADReplicationSiteLink</code><code>Get-ADReplicationSubnet</code><code>Get-ADReplicationConnection</code><code>Get-ADGpoLink</code><code>Get-ADDnsRecord</code></p>
+      <h3>Exchange の構成</h3>
+      <p class="cmds"><code>Get-ExchangeServer</code><code>Get-ReceiveConnector</code><code>Get-SendConnector</code><code>Get-AcceptedDomain</code><code>Get-RemoteDomain</code><code>Get-TransportRule</code><code>Get-MailboxDatabase</code><code>Get-DatabaseAvailabilityGroup</code><code>Get-AddressList</code><code>Get-GlobalAddressList</code><code>Get-OfflineAddressBook</code><code>Get-EmailAddressPolicy</code></p>
+      <h3>Exchange の受信者</h3>
+      <p class="cmds"><code>Get-Recipient</code><code>Get-Mailbox</code><code>Get-RemoteMailbox</code><code>Get-MailUser</code><code>Get-MailContact</code><code>Get-DistributionGroup</code><code>Get-DynamicDistributionGroup</code><code>Get-DistributionGroupMember</code></p>
+      <h3>診断・棚卸し</h3>
+      <p class="cmds"><code>Invoke-ADSearchSelfTest</code><code>Get-ADUserHealth</code><code>Search-ADAccount</code><code>Get-ADComputerHealth</code></p>
+      <p>パラメーターと出力の詳細は<a href="./reference.html">リファレンスマニュアル</a>と、GitHub の README にあります。</p>
+    </section>
+
+    <section class="card content" id="faq" aria-labelledby="h-faq">
+      <h2 id="h-faq">よくある質問</h2>
+      <dl class="faq">
+        <dt>RSAT（ActiveDirectory モジュール）が無くても使えますか？</dt>
+        <dd>はい。.NET の System.DirectoryServices（ADSI／LDAP）だけを使うので、RSAT のインストールは要りません。ドメインに参加した Windows 端末で、一般のドメインユーザーのまま動きます。</dd>
+        <dt>AD の情報を書き換えることはありますか？</dt>
+        <dd>ありません。公開しているコマンドはすべて取得（Get）・検索（Search）と自己診断だけです。テスト用のデータを作るスクリプト（forTest フォルダ）は検証用の環境専用で、本番では使わないでください。</dd>
+        <dt>RSAT の Get-ADUser と同じ結果になりますか？</dt>
+        <dd>主なパラメーターと出力のプロパティを RSAT に合わせています。-Identity は DN・ObjectGUID・SID・sAMAccountName を受け付け、見つからないときは RSAT と同じく例外になります。違いは README とリファレンスの「RSAT 互換プロパティ」「意図的な省略」に書いています。</dd>
+        <dt>実行ポリシーで読み込めません</dt>
+        <dd>同梱の Import-ADSearch.ps1 を使うと、ファイルを文字列として読み込んで取り込むため、ファイルの実行ポリシーの影響を受けません。ローカルにコピーできる場合は Unblock-File してから読み込む方法もあります。</dd>
+      </dl>
+    </section>
+
+    <section class="card content" id="notes" aria-labelledby="h-notes">
+      <h2 id="h-notes">ご利用上の注意</h2>
+      <ul>
+        <li>社内の端末で使う前に、勤め先のルール（持ち込むソフトの扱い、ディレクトリへの問い合わせの可否）を確認してください</li>
+        <li>大量の検索を短い間隔で繰り返すと、DC に負荷がかかります。<code>-Filter</code> と <code>-SearchBase</code> で範囲を絞ってください</li>
+        <li>このページは紹介のためのもので、モジュールは端末の中だけで動き、このサイトに何かを送ることはありません</li>
+        <li>ライセンスは MIT です。無保証で提供しています</li>
+      </ul>
+      <p><a href="https://docs.google.com/forms/d/e/1FAIpQLSd8B90qh5lEIyr25iw1jOjdQjOyaPZ1_z2wMB4kH-EmEeJYWw/viewform?usp=pp_url&amp;entry.585564634=ADSearch" target="_blank" rel="noopener">ご要望・不具合の報告（Google フォーム）</a>：いただいた内容をもとに直します。お返事はしていません。GitHub の Issues でも受け付けます。</p>
+      <p>サイト全体の運営者情報・免責事項は<a href="../about.html">こちら</a>、プライバシーポリシーは<a href="../privacy-policy.html">こちら</a>です（すべてのツールで共通）。</p>
+    </section>
+
+    <section class="card content" id="changelog" aria-labelledby="h-log">
+      <h2 id="h-log">更新履歴</h2>
+      <ul>
+        <li><time datetime="2026-09-24">2026年9月24日</time> 公開（バージョン 1.4.0）</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <nav class="footer-nav" aria-label="フッターナビゲーション">
+      <ul>
+        <li><a href="../">yorozu-craft トップ</a></li>
+        <li><a href="./" aria-current="page">ADSearch</a></li>
+        <li><a href="./reference.html">リファレンス</a></li>
+        <li><a href="../about.html">運営者情報</a></li>
+        <li><a href="../privacy-policy.html">プライバシーポリシー</a></li>
+      </ul>
+    </nav>
+    <p>&copy; 2026 yorozu-craft. All rights reserved.</p>
+  </footer>
+
+  <!-- Cloudflare Web Analytics（Cookie を使わないアクセス解析） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b79bf821e1fd4b6683866d493b1de426"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
