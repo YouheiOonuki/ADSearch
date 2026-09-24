@@ -1,0 +1,1050 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADSearch リファレンスマニュアル</title>
+<style>
+  :root {
+    --bg: #fff;
+    --fg: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --code-bg: #f3f4f6;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --warn-bg: #fffbeb;
+    --warn-border: #f59e0b;
+    --note-bg: #f0fdf4;
+    --note-border: #22c55e;
+    --section-head: #1e3a5f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Meiryo UI", Meiryo, sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--fg);
+    background: var(--bg);
+    display: flex;
+  }
+  /* サイドバー */
+  nav {
+    width: 240px;
+    min-width: 240px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: #1e3a5f;
+    color: #c8d8ed;
+    padding: 16px 0;
+    font-size: 13px;
+  }
+  nav .nav-title {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid #2d5282;
+    margin-bottom: 8px;
+  }
+  nav .nav-group {
+    padding: 8px 16px 2px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: #7fa8cc;
+  }
+  nav a {
+    display: block;
+    padding: 4px 16px 4px 24px;
+    color: #c8d8ed;
+    text-decoration: none;
+  }
+  nav a:hover { background: #2d5282; color: #fff; }
+  /* メインコンテンツ */
+  main {
+    flex: 1;
+    max-width: 900px;
+    padding: 40px 48px;
+    overflow-x: auto;
+  }
+  h1 { font-size: 28px; color: var(--section-head); margin-bottom: 8px; }
+  h2 { font-size: 20px; color: var(--section-head); margin: 48px 0 12px;
+       padding-bottom: 6px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 15px; font-weight: 700; color: var(--section-head);
+       margin: 20px 0 8px; }
+  p { margin-bottom: 10px; }
+  a { color: var(--accent); }
+  ul, ol { margin: 8px 0 10px 22px; }
+  li { margin-bottom: 4px; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+  }
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border-radius: 6px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 10px 0 16px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+  /* パラメータテーブル */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 20px;
+    font-size: 13px;
+  }
+  th {
+    background: var(--section-head);
+    color: #fff;
+    padding: 7px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:nth-child(even) td { background: #f9fafb; }
+  .required { color: #dc2626; font-weight: 700; }
+  /* 注記ボックス */
+  .note {
+    background: var(--note-bg);
+    border-left: 4px solid var(--note-border);
+    padding: 10px 14px;
+    margin: 10px 0 16px;
+    border-radius: 0 4px 4px 0;
+  }
+  .warn {
+    background: var(--warn-bg);
+    border-left: 4px solid var(--warn-border);
+    padding: 10px 14px;
+    margin: 10px 0 16px;
+    border-radius: 0 4px 4px 0;
+  }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 12px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge-new { background: #dcfce7; color: #166534; }
+  .badge-limit { background: #fee2e2; color: #991b1b; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  @media print {
+    nav { display: none; }
+    main { max-width: 100%; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-title">ADSearch</div>
+  <div class="nav-group">はじめに</div>
+  <a href="#overview">概要</a>
+  <a href="#prereq">前提条件</a>
+  <a href="#loading">読み込み方法</a>
+  <a href="#common-params">共通パラメータ</a>
+  <a href="#filter-syntax">フィルター構文</a>
+  <div class="nav-group">AD オブジェクト</div>
+  <a href="#Get-ADUser">Get-ADUser</a>
+  <a href="#Get-ADGroup">Get-ADGroup</a>
+  <a href="#Get-ADGroupMember">Get-ADGroupMember</a>
+  <a href="#Get-ADComputer">Get-ADComputer</a>
+  <a href="#Get-ADOrganizationalUnit">Get-ADOrganizationalUnit</a>
+  <a href="#Get-ADObject">Get-ADObject</a>
+  <a href="#Get-ADServiceAccount">Get-ADServiceAccount</a>
+  <div class="nav-group">ドメイン / フォレスト</div>
+  <a href="#Get-ADDomain">Get-ADDomain</a>
+  <a href="#Get-ADDomainController">Get-ADDomainController</a>
+  <a href="#Get-ADForest">Get-ADForest</a>
+  <a href="#Get-ADDefaultDomainPasswordPolicy">Get-ADDefaultDomainPasswordPolicy</a>
+  <div class="nav-group">信頼 / レプリケーション</div>
+  <a href="#Get-ADTrust">Get-ADTrust</a>
+  <a href="#Get-ADReplicationSite">Get-ADReplicationSite</a>
+  <a href="#Get-ADReplicationSiteLink">Get-ADReplicationSiteLink</a>
+  <a href="#Get-ADReplicationSubnet">Get-ADReplicationSubnet</a>
+  <a href="#Get-ADReplicationConnection">Get-ADReplicationConnection</a>
+  <div class="nav-group">追加機能</div>
+  <a href="#Get-ADGpoLink">Get-ADGpoLink</a>
+  <a href="#Get-ADDnsRecord">Get-ADDnsRecord</a>
+  <div class="nav-group">診断</div>
+  <a href="#Get-ADUserHealth">Get-ADUserHealth</a>
+  <a href="#Search-ADAccount">Search-ADAccount</a>
+  <a href="#Get-ADComputerHealth">Get-ADComputerHealth</a>
+  <div class="nav-group">Exchange 構成</div>
+  <a href="#exchange">概要・注意</a>
+  <a href="#Get-ExchangeServer">Get-ExchangeServer</a>
+  <a href="#Get-ReceiveConnector">Get-ReceiveConnector</a>
+  <a href="#Get-SendConnector">Get-SendConnector</a>
+  <a href="#Get-AcceptedDomain">Get-AcceptedDomain</a>
+  <a href="#Get-RemoteDomain">Get-RemoteDomain</a>
+  <a href="#Get-TransportRule">Get-TransportRule</a>
+  <a href="#Get-MailboxDatabase">Get-MailboxDatabase</a>
+  <a href="#Get-DatabaseAvailabilityGroup">Get-DatabaseAvailabilityGroup</a>
+  <a href="#Get-AddressList">Get-AddressList</a>
+  <a href="#Get-GlobalAddressList">Get-GlobalAddressList</a>
+  <a href="#Get-OfflineAddressBook">Get-OfflineAddressBook</a>
+  <a href="#Get-EmailAddressPolicy">Get-EmailAddressPolicy</a>
+  <div class="nav-group">Exchange 受信者</div>
+  <a href="#exchange-recipients">概要・注意</a>
+  <a href="#Get-Recipient">Get-Recipient</a>
+  <a href="#Get-Mailbox">Get-Mailbox</a>
+  <a href="#Get-RemoteMailbox">Get-RemoteMailbox</a>
+  <a href="#Get-MailUser">Get-MailUser</a>
+  <a href="#Get-MailContact">Get-MailContact</a>
+  <a href="#Get-DistributionGroup">Get-DistributionGroup</a>
+  <a href="#Get-DynamicDistributionGroup">Get-DynamicDistributionGroup</a>
+  <a href="#Get-DistributionGroupMember">Get-DistributionGroupMember</a>
+  <div class="nav-group">ユーティリティ</div>
+  <a href="#Invoke-ADSearchSelfTest">Invoke-ADSearchSelfTest</a>
+  <div class="nav-group">付録</div>
+  <a href="#newparams">件数上限・タイムアウト</a>
+  <a href="#execpolicy">実行ポリシー対策</a>
+  <a href="#limitations">制限事項</a>
+  <a href="#multiforest">マルチドメイン</a>
+</nav>
+
+<main>
+
+<h1>ADSearch リファレンスマニュアル</h1>
+<p class="subtitle">Version 1.3.0 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+
+<!-- ========================================================== -->
+<h2 id="overview">概要</h2>
+<p>ADSearch は <code>System.DirectoryServices</code>（ADSI/LDAP）を使用して Active Directory 情報を取得する PowerShell ライブラリです。RSAT（Remote Server Administration Tools）のインストールを必要とせず、ドメイン参加済みの一般端末・一般ユーザーで実行できます。</p>
+<p>コマンド名と使い方は RSAT の ActiveDirectory モジュールに合わせており、実環境のサーバーで RSAT を使うときとのギャップを最小限にするよう設計されています。</p>
+
+<!-- ========================================================== -->
+<h2 id="prereq">前提条件</h2>
+<table>
+  <tr><th>要件</th><th>内容</th></tr>
+  <tr><td>PowerShell</td><td>5.1 以上（Windows PowerShell）</td></tr>
+  <tr><td>OS</td><td>ドメイン参加済み Windows 端末、または DC への TCP 389（LDAPS は 636）が疎通できる端末</td></tr>
+  <tr><td>権限</td><td>ドメインユーザー（Domain Users）で大半の機能が動作。PSO の読み取りは Domain Admins 以上が必要</td></tr>
+  <tr><td>RSAT</td><td>不要</td></tr>
+  <tr><td>ネットワーク</td><td>DC への LDAP/LDAPS ポートが開いていること。UNC パスから読み込む場合は SMB（445）も必要</td></tr>
+</table>
+<div class="warn">
+  <strong>実行ポリシーについて：</strong> UNC パスからのスクリプト実行には <code>RemoteSigned</code> または <code>Unrestricted</code> ポリシーが必要です。<code>RemoteSigned</code> の場合、ネットワーク上のスクリプトは署名が必要になります。環境に合わせて対応してください。
+</div>
+
+<!-- ========================================================== -->
+<h2 id="loading">読み込み方法</h2>
+
+<h3>モジュールとして（推奨）</h3>
+<p>Import-Module を使うと公開関数のみがエクスポートされ、内部関数は隠蔽されます。RSAT との共存も明示的に管理できます。</p>
+<pre><code># ローカルパスから
+Import-Module C:\Tools\ADSearch\ADSearch.psd1
+
+# UNC パス（ファイルサーバー上に配置して共有）
+Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1
+
+# ファイルが更新された場合の再読み込み
+Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
+
+<h3>dot-source（スクリプト内・一時利用）</h3>
+<p>dot-source では内部関数（<code>ADSI_*</code>）も現在スコープに展開されます。デバッグや一時利用向けです。</p>
+<pre><code>. \\fileserver\tools\ADSearch\ADSearch.ps1</code></pre>
+
+<h3>RSAT との共存</h3>
+<pre><code>Import-Module ActiveDirectory
+Import-Module \\server\tools\ADSearch\ADSearch.psd1
+
+# モジュール名を明示してどちらを使うか指定
+ADSearch\Get-ADUser    -Identity yamada -Server dc01
+ActiveDirectory\Get-ADUser -Identity yamada</code></pre>
+
+<!-- ========================================================== -->
+<h2 id="common-params">共通パラメータ</h2>
+<p>以下のパラメータはほぼすべての関数で共通です。</p>
+<table>
+  <tr><th>パラメータ</th><th>型</th><th>説明</th></tr>
+  <tr><td><code>-Server</code></td><td>string</td><td>接続先 DC のホスト名または FQDN。省略時は現在ログオン中のドメインの DC に自動接続</td></tr>
+  <tr><td><code>-UseSSL</code></td><td>switch</td><td>LDAPS（ポート 636）を使用。DC に有効な証明書が必要</td></tr>
+  <tr><td><code>-Credential</code></td><td>PSCredential</td><td>接続に使用する資格情報。省略時は現在のログオンユーザー</td></tr>
+  <tr><td><code>-SearchBase</code></td><td>string</td><td>検索ルートとなる DN（例: <code>OU=Tokyo,DC=corp,DC=local</code>）。省略時はドメインルート</td></tr>
+  <tr><td><code>-SearchScope</code></td><td>string</td><td><code>Subtree</code>（既定）/ <code>OneLevel</code> / <code>Base</code></td></tr>
+  <tr><td><code>-Properties</code></td><td>string[]</td><td>追加取得する属性名。<code>*</code> で全属性取得</td></tr>
+  <tr><td><code>-Filter</code></td><td>string</td><td>PowerShell 形式のフィルター（例: <code>"Name -like 'srv*'"</code>）</td></tr>
+  <tr><td><code>-LDAPFilter</code></td><td>string</td><td>生の LDAP フィルター（例: <code>"(sAMAccountName=yamada)"</code>）</td></tr>
+  <tr><td><code>-Identity</code></td><td>string</td><td>DN / GUID / SID / SAM アカウント名 / UPN のいずれかで指定</td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="filter-syntax">フィルター構文</h2>
+<p><code>-Filter</code> では以下の演算子が使用できます。</p>
+<table>
+  <tr><th>演算子</th><th>意味</th><th>例</th></tr>
+  <tr><td><code>-eq</code></td><td>等しい</td><td><code>"SamAccountName -eq 'yamada'"</code></td></tr>
+  <tr><td><code>-ne</code></td><td>等しくない</td><td><code>"Enabled -ne '$true'"</code></td></tr>
+  <tr><td><code>-like</code></td><td>ワイルドカード（* を使用可）</td><td><code>"Name -like 'srv*'"</code></td></tr>
+  <tr><td><code>-notlike</code></td><td>ワイルドカード否定</td><td><code>"Name -notlike 'test*'"</code></td></tr>
+  <tr><td><code>-ge / -le</code></td><td>以上 / 以下</td><td><code>"LastLogonDate -ge '2024-01-01'"</code></td></tr>
+  <tr><td><code>-and</code></td><td>AND 結合</td><td><code>"Enabled -eq '$true' -and Name -like 'srv*'"</code></td></tr>
+  <tr><td><code>-or</code></td><td>OR 結合</td><td><code>"Name -like 'web*' -or Name -like 'app*'"</code></td></tr>
+</table>
+<div class="note"><code>-and</code> と <code>-or</code> の混在はできません。複雑な条件は <code>-LDAPFilter</code> を使用してください。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADUser">Get-ADUser</h2>
+<p>ユーザーオブジェクトを検索・取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADUser [-Identity] &lt;string&gt; [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+           [-SearchBase &lt;string&gt;] [-Properties &lt;string[]&gt;]
+
+Get-ADUser [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;] [-Server &lt;string&gt;] [-UseSSL]
+           [-Credential &lt;PSCredential&gt;] [-SearchBase &lt;string&gt;] [-SearchScope &lt;string&gt;]
+           [-Properties &lt;string[]&gt;]</code></pre>
+
+<h3>既定の出力プロパティ</h3>
+<p>DistinguishedName, Name, SamAccountName, UserPrincipalName, DisplayName, EmailAddress, Enabled, LastLogonDate, PasswordLastSet, MemberOf, ObjectClass</p>
+
+<h3>使用例</h3>
+<pre><code># アカウント名で取得
+Get-ADUser -Identity yamada -Server dc01.corp.local
+
+# 表示名で絞り込み
+Get-ADUser -Filter "DisplayName -like '山田*'" -Server dc01.corp.local
+
+# LDAP フィルター
+Get-ADUser -LDAPFilter "(mail=yamada@corp.local)" -Server dc01.corp.local
+
+# 追加属性を取得
+Get-ADUser -Identity yamada -Properties description,telephoneNumber -Server dc01.corp.local
+
+# 全属性取得
+Get-ADUser -Identity yamada -Properties * -Server dc01.corp.local
+
+# 特定 OU 内のみ検索（OneLevel）
+Get-ADUser -LDAPFilter "(objectClass=user)" -SearchBase "OU=Tokyo,DC=corp,DC=local" `
+           -SearchScope OneLevel -Server dc01.corp.local
+
+# 無効ユーザーをすべて取得
+Get-ADUser -Filter "Enabled -eq '`$false'" -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADGroup">Get-ADGroup</h2>
+<p>グループオブジェクトを検索・取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADGroup [-Identity] &lt;string&gt; [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+            [-SearchBase &lt;string&gt;] [-Properties &lt;string[]&gt;]
+
+Get-ADGroup [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;] [-Server &lt;string&gt;] [-UseSSL]
+            [-Credential &lt;PSCredential&gt;] [-SearchBase &lt;string&gt;] [-SearchScope &lt;string&gt;]
+            [-Properties &lt;string[]&gt;]</code></pre>
+
+<h3>既定の出力プロパティ</h3>
+<p>DistinguishedName, Name, SamAccountName, GroupScope, GroupCategory, Description, Member, MemberOf, ObjectGUID, SID, ObjectClass</p>
+
+<h3>使用例</h3>
+<pre><code># グループ名で取得
+Get-ADGroup -Identity "IT-Staff" -Server dc01.corp.local
+
+# セキュリティグループのみ取得
+Get-ADGroup -LDAPFilter "(&amp;(objectCategory=group)(groupType:1.2.840.113556.1.4.803:=2147483648))" `
+            -Server dc01.corp.local
+
+# グローバルスコープのグループを検索
+Get-ADGroup -Filter "GroupScope -eq 'Global'" -Server dc01.corp.local
+
+# メンバー一覧を含めて取得
+Get-ADGroup -Identity "IT-Staff" -Properties member -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADGroupMember">Get-ADGroupMember</h2>
+<p>グループのメンバーを取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADGroupMember [-Identity] &lt;string&gt; [-Recursive] [-Server &lt;string&gt;] [-UseSSL]
+                  [-Credential &lt;PSCredential&gt;] [-SearchBase &lt;string&gt;]</code></pre>
+
+<h3>パラメータ</h3>
+<table>
+  <tr><th>パラメータ</th><th>説明</th></tr>
+  <tr><td><code>-Identity</code> <span class="required">必須</span></td><td>グループの DN / SAM アカウント名 / GUID / SID</td></tr>
+  <tr><td><code>-Recursive</code></td><td>ネストされたグループを再帰的に展開してすべてのメンバーを返す</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code># 直接メンバーのみ取得
+Get-ADGroupMember -Identity "IT-Staff" -Server dc01.corp.local
+
+# 再帰展開（ネストグループのメンバーも含む）
+Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local
+
+# 結果をユーザーのみに絞り込む
+Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local |
+    Where-Object ObjectClass -eq 'user'</code></pre>
+
+<div class="note"><code>-Recursive</code> は LDAP の <code>LDAP_MATCHING_RULE_IN_CHAIN</code>（OID: 1.2.840.113556.1.4.1941）を使用します。大規模グループでは応答に時間がかかる場合があります。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADComputer">Get-ADComputer</h2>
+<p>コンピュータオブジェクトを検索・取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADComputer [-Identity] &lt;string&gt; [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+               [-SearchBase &lt;string&gt;] [-Properties &lt;string[]&gt;]
+
+Get-ADComputer [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;] [-Server &lt;string&gt;] [-UseSSL]
+               [-Credential &lt;PSCredential&gt;] [-SearchBase &lt;string&gt;] [-SearchScope &lt;string&gt;]
+               [-Properties &lt;string[]&gt;]</code></pre>
+
+<h3>既定の出力プロパティ</h3>
+<p>DistinguishedName, Name, SamAccountName, DNSHostName, OperatingSystem, Enabled, LastLogonDate, IPv4Address, ObjectGUID, SID, ObjectClass</p>
+
+<h3>使用例</h3>
+<pre><code># コンピュータ名で取得
+Get-ADComputer -Identity pc001 -Server dc01.corp.local
+
+# OS で絞り込み
+Get-ADComputer -Filter "OperatingSystem -like '*Server 2022*'" -Server dc01.corp.local
+
+# 無効なコンピュータ一覧
+Get-ADComputer -Filter "Enabled -eq '`$false'" -Server dc01.corp.local
+
+# IP アドレスも含めて取得（DNS 逆引きで解決）
+Get-ADComputer -Identity pc001 -Properties IPv4Address -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADOrganizationalUnit">Get-ADOrganizationalUnit</h2>
+<p>OU（組織単位）オブジェクトを検索・取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADOrganizationalUnit [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+                         [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+                         [-SearchBase &lt;string&gt;] [-Properties &lt;string[]&gt;]</code></pre>
+
+<h3>既定の出力プロパティ</h3>
+<p>DistinguishedName, Name, Description, Created, Modified, ObjectGUID, ObjectClass</p>
+
+<h3>使用例</h3>
+<pre><code># すべての OU を取得
+Get-ADOrganizationalUnit -Filter * -Server dc01.corp.local
+
+# 名前で絞り込み
+Get-ADOrganizationalUnit -Filter "Name -like 'Tokyo*'" -Server dc01.corp.local
+
+# DN で指定
+Get-ADOrganizationalUnit -Identity "OU=Tokyo,OU=Corp,DC=corp,DC=local" -Server dc01.corp.local
+
+# GPO リンク情報を含めて取得
+Get-ADOrganizationalUnit -Filter * -Properties gPLink -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADObject">Get-ADObject</h2>
+<p>種類を問わず AD オブジェクトを検索・取得します。削除済みオブジェクトの検索も可能です。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADObject [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+             [-IncludeDeletedObjects] [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+             [-SearchBase &lt;string&gt;] [-Properties &lt;string[]&gt;]</code></pre>
+
+<h3>パラメータ（追加）</h3>
+<table>
+  <tr><th>パラメータ</th><th>説明</th></tr>
+  <tr><td><code>-IncludeDeletedObjects</code></td><td>AD ごみ箱が有効な環境で削除済みオブジェクトも検索対象に含める</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code># DN で任意のオブジェクトを取得
+Get-ADObject -Identity "CN=yamada,OU=Users,DC=corp,DC=local" -Server dc01.corp.local
+
+# すべてのオブジェクトタイプを検索
+Get-ADObject -LDAPFilter "(name=yamada)" -Server dc01.corp.local
+
+# 削除済みオブジェクトを検索（AD ごみ箱が有効な環境のみ）
+Get-ADObject -LDAPFilter "(isDeleted=TRUE)" -IncludeDeletedObjects -Server dc01.corp.local</code></pre>
+
+<div class="note"><code>-IncludeDeletedObjects</code> は AD ごみ箱（Recycle Bin）が有効な環境でのみ機能します。無効な環境では削除済みオブジェクトはすぐに消去されます。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADServiceAccount">Get-ADServiceAccount</h2>
+<p>管理サービスアカウント（gMSA / sMSA）を検索・取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADServiceAccount [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+                     [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+                     [-SearchBase &lt;string&gt;] [-Properties &lt;string[]&gt;]</code></pre>
+
+<h3>既定の出力プロパティ</h3>
+<p>DistinguishedName, Name, SamAccountName, DNSHostName, Enabled, ObjectGUID, SID, ObjectClass</p>
+
+<h3>使用例</h3>
+<pre><code># すべての管理サービスアカウントを取得
+Get-ADServiceAccount -Server dc01.corp.local
+
+# gMSA のみ取得
+Get-ADServiceAccount -LDAPFilter "(objectClass=msDS-GroupManagedServiceAccount)" -Server dc01.corp.local
+
+# 名前で検索
+Get-ADServiceAccount -Filter "Name -like 'svc-*'" -Server dc01.corp.local</code></pre>
+
+<div class="note">gMSA の作成には KDS ルートキーが必要です。読み取りはドメインユーザーで可能です。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADDomain">Get-ADDomain</h2>
+<p>ドメイン情報を取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADDomain [-Identity &lt;string&gt;] [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>DNSRoot</td><td>ドメインの DNS 名（例: corp.local）</td></tr>
+  <tr><td>DistinguishedName</td><td>ドメインの DN（例: DC=corp,DC=local）</td></tr>
+  <tr><td>Forest</td><td>フォレストルートの DNS 名</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code>Get-ADDomain -Server dc01.corp.local
+
+# Identity にドメイン名を指定（Server として扱われる）
+Get-ADDomain -Identity corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADDomainController">Get-ADDomainController</h2>
+<p>ドメインコントローラー情報を取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADDomainController [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-Discover]
+                       [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>Name</td><td>DC のホスト名</td></tr>
+  <tr><td>HostName</td><td>DC の FQDN</td></tr>
+  <tr><td>Domain</td><td>DC が所属するドメインの DNS 名</td></tr>
+  <tr><td>Forest</td><td>フォレストルートの DNS 名</td></tr>
+</table>
+
+<div class="warn"><strong>制限：</strong> 接続先の DC 1台の情報のみ返します。フォレスト内の全 DC を列挙する機能はありません。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADForest">Get-ADForest</h2>
+<p>フォレスト情報を取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADForest [-Identity &lt;string&gt;] [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>Name</td><td>フォレストルートの DNS 名</td></tr>
+  <tr><td>RootDomain</td><td>フォレストルートドメインの DNS 名</td></tr>
+  <tr><td>ForestMode</td><td>フォレスト機能レベル名（例: Windows2016Forest）</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code>Get-ADForest -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADDefaultDomainPasswordPolicy">Get-ADDefaultDomainPasswordPolicy</h2>
+<p>ドメインの既定パスワードポリシーを取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADDefaultDomainPasswordPolicy [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>MinPasswordLength</td><td>最小パスワード長</td></tr>
+  <tr><td>MaxPasswordAge</td><td>パスワードの最大有効期間</td></tr>
+  <tr><td>PasswordHistoryCount</td><td>パスワード履歴の保存件数</td></tr>
+  <tr><td>LockoutThreshold</td><td>アカウントロックアウトのしきい値</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code>Get-ADDefaultDomainPasswordPolicy -Server dc01.corp.local</code></pre>
+
+<div class="note">きめ細かいパスワードポリシー（PSO）は <code>CN=Password Settings Container</code> の ACL 制限のため、LDAP では通常ユーザーから読み取れません。PSO の確認は DC 上で RSAT を使用してください。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADTrust">Get-ADTrust</h2>
+<p>ドメイン信頼関係を取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADTrust [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+            [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>使用例</h3>
+<pre><code># すべての信頼関係を取得
+Get-ADTrust -Server dc01.corp.local
+
+# 信頼先ドメイン名で検索
+Get-ADTrust -Filter "Name -like 'partner*'" -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADReplicationSite">Get-ADReplicationSite</h2>
+<p>AD サイトを取得します。サイト情報はフォレスト共通です。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADReplicationSite [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+                      [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>使用例</h3>
+<pre><code>Get-ADReplicationSite -Server dc01.corp.local
+Get-ADReplicationSite -Identity "Default-First-Site-Name" -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADReplicationSiteLink">Get-ADReplicationSiteLink</h2>
+<p>サイトリンクを取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADReplicationSiteLink [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+                          [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>使用例</h3>
+<pre><code>Get-ADReplicationSiteLink -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADReplicationSubnet">Get-ADReplicationSubnet</h2>
+<p>サイトに関連付けられたサブネットを取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADReplicationSubnet [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+                        [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>使用例</h3>
+<pre><code>Get-ADReplicationSubnet -Server dc01.corp.local
+Get-ADReplicationSubnet -Identity "192.168.10.0/24" -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADReplicationConnection">Get-ADReplicationConnection</h2>
+<p>DC 間のレプリケーション接続オブジェクトを取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADReplicationConnection [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
+                            [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<div class="note">シングル DC 環境では結果が 0 件になります（DC 間のオブジェクトのため）。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADGpoLink">Get-ADGpoLink <span class="badge badge-new">追加機能</span></h2>
+<p>指定した OU にリンクされている GPO の一覧と状態を取得します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADGpoLink [-Target] &lt;string&gt; [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>パラメータ</h3>
+<table>
+  <tr><th>パラメータ</th><th>説明</th></tr>
+  <tr><td><code>-Target</code> <span class="required">必須</span></td><td>対象 OU の DN（例: <code>OU=Tokyo,OU=Corp,DC=corp,DC=local</code>）</td></tr>
+</table>
+
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>TargetOU</td><td>対象 OU の DN</td></tr>
+  <tr><td>GpoName</td><td>GPO の表示名</td></tr>
+  <tr><td>GpoGuid</td><td>GPO の GUID</td></tr>
+  <tr><td>LinkEnabled</td><td>リンクが有効か（True/False）</td></tr>
+  <tr><td>Enforced</td><td>強制適用（Enforced）か（True/False）</td></tr>
+  <tr><td>Order</td><td>リンク順序（1 が最高優先）</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code># OU にリンクされた GPO を確認
+Get-ADGpoLink -Target "OU=Tokyo,OU=Corp,DC=corp,DC=local" -Server dc01.corp.local
+
+# 強制適用されている GPO のみ表示
+Get-ADGpoLink -Target "OU=Tokyo,OU=Corp,DC=corp,DC=local" -Server dc01.corp.local |
+    Where-Object Enforced -eq $true</code></pre>
+
+<div class="note">継承による GPO リンクは返しません。指定した OU に直接リンクされているもののみが対象です。</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADDnsRecord">Get-ADDnsRecord <span class="badge badge-new">追加機能</span></h2>
+<p>AD 統合 DNS のレコードを取得します。A / AAAA レコードの IP アドレスも解析して返します。</p>
+
+<h3>構文</h3>
+<pre><code>Get-ADDnsRecord [-Name &lt;string&gt;] [-ZoneName &lt;string&gt;] [-Partition &lt;Both|Domain|Forest&gt;]
+                [-ComputerName &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+
+<h3>パラメータ</h3>
+<table>
+  <tr><th>パラメータ</th><th>説明</th></tr>
+  <tr><td><code>-Name</code></td><td>レコード名でフィルター（例: <code>pc001</code>）</td></tr>
+  <tr><td><code>-ZoneName</code></td><td>特定のゾーンに絞り込む（例: <code>corp.local</code>）。省略時は全ゾーン検索</td></tr>
+  <tr><td><code>-Partition</code></td><td>探索先の DNS アプリケーション パーティション。<code>Both</code>（既定）/ <code>Domain</code> / <code>Forest</code>。DomainDnsZones はドメイン NC 配下、ForestDnsZones はフォレストルート NC 配下にあり、<strong>子ドメインでは両者の DN が異なる</strong>（例: <code>DC=DomainDnsZones,DC=main,DC=forestroot,DC=local</code> と <code>DC=ForestDnsZones,DC=forestroot,DC=local</code>）。ForestDnsZones のゾーンだけを見たいときは <code>-Partition Forest</code></td></tr>
+  <tr><td><code>-ComputerName</code></td><td>接続先 DC（<code>-Server</code> のエイリアスとしても使用可）</td></tr>
+</table>
+
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>ZoneName</td><td>DNS ゾーン名（例: corp.local）</td></tr>
+  <tr><td>Name</td><td>レコード名（ホスト部分）</td></tr>
+  <tr><td>RecordType</td><td>レコード種別（A, AAAA, NS, CNAME, SOA, PTR, MX, TXT, SRV など）</td></tr>
+  <tr><td>Data</td><td>A / AAAA レコードは IP アドレス文字列。その他は null</td></tr>
+  <tr><td>DistinguishedName</td><td>AD 内の DN</td></tr>
+  <tr><td>WhenChanged</td><td>最終更新日時</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code># ホスト名で DNS レコードを取得
+Get-ADDnsRecord -Name pc001 -ComputerName dc01.corp.local
+
+# ゾーン内のすべての A レコードを取得
+Get-ADDnsRecord -ZoneName corp.local -ComputerName dc01.corp.local |
+    Where-Object RecordType -eq 'A'
+
+# フィルタなし（全ゾーン・全レコード）
+Get-ADDnsRecord -ComputerName dc01.corp.local
+
+# 子ドメインの DNS を取得（DC を切り替える）
+Get-ADDnsRecord -ComputerName dc01.child.corp.local -ZoneName child.corp.local</code></pre>
+
+<div class="note">
+<strong>対応ゾーン：</strong> DomainDnsZones と ForestDnsZones の両方を自動的に検索します。<br>
+<strong>IP アドレス解析：</strong> A レコード（IPv4）と AAAA レコード（IPv6）の Data フィールドに IP アドレスを返します。他のレコード種別は Data が null になります。
+</div>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Invoke-ADSearchSelfTest">Invoke-ADSearchSelfTest</h2>
+<p>ライブラリの読み込み状態と AD への接続を確認します。</p>
+
+<h3>構文</h3>
+<pre><code>Invoke-ADSearchSelfTest [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
+                        [-SampleGroup &lt;string&gt;]</code></pre>
+
+<h3>パラメータ</h3>
+<table>
+  <tr><th>パラメータ</th><th>説明</th></tr>
+  <tr><td><code>-Server</code></td><td>省略時は関数ロードのチェックのみ実施</td></tr>
+  <tr><td><code>-SampleGroup</code></td><td>テストに使用するグループ名（既定: <code>Domain Admins</code>）</td></tr>
+</table>
+
+<h3>使用例</h3>
+<pre><code># 関数ロード確認のみ（サーバー未指定）
+Invoke-ADSearchSelfTest
+
+# 接続テストも含めて実行
+Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="Get-ADUserHealth">Get-ADUserHealth <span class="badge badge-new">v1.3</span></h2>
+<p>1 ユーザーのアカウント状態・メール（ハイブリッド）状態・グループ所属を 1 オブジェクトにまとめて返す診断コマンドです。内部で <code>Get-ADUser</code> を 1 回呼び出し、Exchange 属性も合わせて取得します。オンプレ AD にスタンプされた値のみが対象で、Exchange Online 側でしか分からない情報（実メールボックスサイズ・EXO 側のブロック状態等）は取得できません。</p>
+<p>出力: Name, SamAccountName, UserPrincipalName, DisplayName, Enabled, LockedOut, PasswordExpired, PasswordExpiryDate, PasswordNeverExpires, AccountExpirationDate, PasswordLastSet, LastLogonDate, BadLogonCount, AccountLockoutTime, WhenCreated, WhenChanged, MailEnabled, PrimarySmtpAddress, EmailAddresses, RemoteRoutingAddress, RemoteRecipientType, RecipientTypeDetails, HiddenFromAddressLists, GroupCount, Groups, DistinguishedName。</p>
+<div class="note"><code>-Recursive</code> はグループ所属を <code>LDAP_MATCHING_RULE_IN_CHAIN</code>（OID: 1.2.840.113556.1.4.1941）でネスト展開し、単一クエリで全所属グループを返します。既定（指定なし）は直接所属（memberOf）のみ。<code>WhenCreated</code>/<code>WhenChanged</code> はアカウント作成時期・最終変更の切り分けに使用します。</div>
+<pre><code>Get-ADUserHealth -Identity yamada -Server dc01.corp.local
+Get-ADUserHealth -Identity yamada@contoso.com -Server dc01.corp.local -Recursive
+Get-ADUserHealth -Identity yamada -Server dc01.corp.local | Format-List</code></pre>
+
+<h2 id="Search-ADAccount">Search-ADAccount <span class="badge badge-new">v1.3</span></h2>
+<p>RSAT の <code>Search-ADAccount</code> と同様のパラメーターセット（<code>-AccountInactive</code> / <code>-AccountDisabled</code> / <code>-AccountExpired</code> / <code>-PasswordExpired</code> / <code>-PasswordNeverExpires</code> / <code>-LockedOut</code>）で、非アクティブ・無効・期限切れ等のアカウントを棚卸しします。既定ではユーザー・コンピューターの両方が対象で、<code>-UsersOnly</code> / <code>-ComputersOnly</code> で絞り込めます。</p>
+<table>
+  <tr><th>スイッチ</th><th>内容</th></tr>
+  <tr><td><code>-AccountInactive</code>（<code>-TimeSpan</code> または <code>-DaysInactive</code> と併用）</td><td>指定期間ログオンのないアカウント（未ログオンも含む）</td></tr>
+  <tr><td><code>-AccountDisabled</code></td><td>無効化されているアカウント</td></tr>
+  <tr><td><code>-AccountExpired</code></td><td>アカウント有効期限切れ</td></tr>
+  <tr><td><code>-PasswordExpired</code></td><td>パスワード期限切れ</td></tr>
+  <tr><td><code>-PasswordNeverExpires</code></td><td>パスワード無期限設定</td></tr>
+  <tr><td><code>-LockedOut</code></td><td>現在ロックアウト中</td></tr>
+  <tr><td><code>-UsersOnly</code> / <code>-ComputersOnly</code></td><td>対象オブジェクトの絞り込み（同時指定不可）</td></tr>
+</table>
+<div class="warn">
+  <strong>複製遅延の注意：</strong> <code>-AccountInactive</code> は <code>lastLogonTimestamp</code> を判定に使うため、レプリケーション遅延（既定で最大約14日）により結果に同程度の誤差を含みます（RSAT も同じ制約）。
+</div>
+<div class="note"><code>-PasswordExpired</code> / <code>-LockedOut</code> は DC が計算する構築属性のためサーバー側フィルターができず、取得後にクライアント側で絞り込みます。大規模環境では <code>-SearchBase</code> で対象を絞ることを推奨します。</div>
+<pre><code>Search-ADAccount -AccountInactive -DaysInactive 90 -UsersOnly -Server dc01
+Search-ADAccount -LockedOut -Server dc01</code></pre>
+
+<h2 id="Get-ADComputerHealth">Get-ADComputerHealth <span class="badge badge-new">v1.3</span></h2>
+<p><code>Get-ADUserHealth</code> のコンピュータ版です。信頼関係（セキュアチャネル）トラブルの一次切り分けに必要な情報を 1 オブジェクトで返します。内部で <code>Get-ADComputer</code> を 1 回呼び出します。</p>
+<p>出力: Name, SamAccountName, DNSHostName, Description, Enabled, LastLogonDate, PasswordLastSet, MachinePasswordAge, MachinePasswordStale, OperatingSystem, OperatingSystemVersion, OperatingSystemServicePack, IPv4Address, IPv6Address, DnsRegistered, Location, ManagedBy, SPNCount, GroupCount, Groups, WhenCreated, WhenChanged, DistinguishedName。</p>
+<div class="note"><code>-Identity</code> はコンピュータ名を末尾 <code>$</code> の有無どちらでも受け付けます（<code>sAMAccountName</code> は <code>PC001$</code> 形式のため、<code>$</code> 無しで指定した場合は内部でまず <code>$</code> 無しで検索し、見つからなければ <code>$</code> 付きで再試行します）。</div>
+<div class="warn">
+  <strong>MachinePasswordStale：</strong> <code>MachinePasswordAge -gt 30</code>（既定のマシンパスワード更新周期は30日）。<code>$true</code> の場合、そのPCが長期間オフラインだったか、セキュアチャネル（信頼関係）が壊れている可能性があります。PC側での <code>Test-ComputerSecureChannel</code> 実行を推奨します。
+</div>
+<pre><code>Get-ADComputerHealth -Identity PC001 -Server dc01.corp.local
+Get-ADComputerHealth -Identity 'PC001$' -Server dc01.corp.local | Format-List</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="exchange">Exchange 構成の取得 <span class="badge badge-new">v1.1</span></h2>
+<p>Exchange Management Shell に接続せず、AD の構成パーティション（<code>CN=Microsoft Exchange,CN=Services,&lt;ConfigNC&gt;</code>）に格納された <strong>構成情報のみ</strong> を読み取ります。すべて読み取り専用です。</p>
+<div class="warn">
+  <strong>取得できないもの：</strong> メールの中身・送受信キュー・メールボックスサイズ・サービス稼働状態などの <em>動的情報</em> は AD に存在しないため取得できません。本機能は「設定・構成のスナップショット」専用です。Exchange 未導入環境では警告を出して空を返します。
+</div>
+<table>
+  <tr><th>共通パラメータ</th><th>説明</th></tr>
+  <tr><td><code>-Server</code></td><td>接続先 DC。省略時は現在のドメイン</td></tr>
+  <tr><td><code>-Identity</code> / <code>-Filter</code> / <code>-LDAPFilter</code></td><td>名前や条件で絞り込み（他コマンドと同様）</td></tr>
+  <tr><td><code>-Timeout</code></td><td>クライアント側タイムアウト秒（0=無制限）</td></tr>
+</table>
+
+<h2 id="Get-ExchangeServer">Get-ExchangeServer</h2>
+<p>Exchange サーバーの一覧・役割・バージョンを取得します（<code>msExchExchangeServer</code>）。</p>
+<table>
+  <tr><th>出力</th><th>説明</th></tr>
+  <tr><td>Name</td><td>サーバー名</td></tr>
+  <tr><td>Fqdn</td><td>FQDN（networkAddress から抽出）</td></tr>
+  <tr><td>ServerRole</td><td>役割（Mailbox / ClientAccess / HubTransport / EdgeTransport 等）</td></tr>
+  <tr><td>Edition</td><td>バージョン文字列（serialNumber）</td></tr>
+  <tr><td>Site</td><td>所属サイト</td></tr>
+</table>
+<pre><code>Get-ExchangeServer -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-ReceiveConnector">Get-ReceiveConnector</h2>
+<p>受信コネクタの構成を取得します（<code>msExchSmtpReceiveConnector</code>）。出力: Name, Server, Bindings, RemoteIPRanges, DistinguishedName。</p>
+<pre><code>Get-ReceiveConnector -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-SendConnector">Get-SendConnector</h2>
+<p>送信コネクタの構成を取得します（<code>msExchRoutingSMTPConnector</code>）。出力: Name, SmartHosts, SourceServers, DistinguishedName。</p>
+<pre><code>Get-SendConnector -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-AcceptedDomain">Get-AcceptedDomain</h2>
+<p>受理ドメインを取得します（<code>msExchAcceptedDomain</code>）。出力: Name, DomainName, DomainType（Authoritative / Relay）, DistinguishedName。</p>
+<pre><code>Get-AcceptedDomain -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-RemoteDomain">Get-RemoteDomain</h2>
+<p>リモートドメインを取得します（<code>msExchDomainContentConfig</code>）。出力: Name, DomainName, DistinguishedName。</p>
+<pre><code>Get-RemoteDomain -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-TransportRule">Get-TransportRule</h2>
+<p>トランスポートルールを取得します（<code>msExchTransportRule</code>）。出力: Name, Priority, State, DistinguishedName。</p>
+<div class="note">ルール本体はシリアライズされた XML（<code>msExchTransportRuleXml</code>）で格納されています。完全な復元は行わず、<code>-IncludeXml</code> を付けると生 XML を <code>RuleXml</code> に格納して返します。</div>
+<pre><code>Get-TransportRule -Server dc01.corp.local
+Get-TransportRule -Server dc01.corp.local -IncludeXml</code></pre>
+
+<h2 id="Get-MailboxDatabase">Get-MailboxDatabase</h2>
+<p>メールボックスデータベースの構成を取得します（<code>msExchPrivateMDB</code>）。出力: Name, Server, DistinguishedName。マウント状態・サイズ等の動的情報は含みません。</p>
+<pre><code>Get-MailboxDatabase -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-DatabaseAvailabilityGroup">Get-DatabaseAvailabilityGroup</h2>
+<p>データベース可用性グループ（DAG）の構成を取得します（<code>msExchMDBAvailabilityGroup</code>）。出力: Name, Servers, DistinguishedName。</p>
+<pre><code>Get-DatabaseAvailabilityGroup -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-AddressList">Get-AddressList <span class="badge badge-new">v1.2</span></h2>
+<p>アドレスリストの構成を取得します（<code>addressBookContainer</code> — "All Address Lists" 配下）。出力: Name, RecipientFilter, LdapRecipientFilter, Container, DistinguishedName。</p>
+<div class="note"><code>RecipientFilter</code> は <code>msExchQueryFilter</code>（OPATH 文字列）、<code>LdapRecipientFilter</code> は <code>purportedSearch</code>（LDAP フィルター文字列）をそのまま返します。</div>
+<pre><code>Get-AddressList -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-GlobalAddressList">Get-GlobalAddressList <span class="badge badge-new">v1.2</span></h2>
+<p>グローバルアドレスリスト（GAL）の構成を取得します（<code>addressBookContainer</code> — "All Global Address Lists" 配下）。出力: Name, RecipientFilter, LdapRecipientFilter, Container, DistinguishedName。</p>
+<pre><code>Get-GlobalAddressList -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-OfflineAddressBook">Get-OfflineAddressBook <span class="badge badge-new">v1.2</span></h2>
+<p>オフラインアドレス帳（OAB）の構成を取得します（<code>msExchOAB</code>）。出力: Name, AddressLists, IsDefault, DistinguishedName。</p>
+<div class="note"><code>IsDefault</code> は <code>msExchOABFlags</code> の bit 1 から判定（ベストエフォート。属性名は公式ドキュメントに一覧なし）。<code>AddressLists</code> は各 DN の先頭 CN を返します。</div>
+<pre><code>Get-OfflineAddressBook -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-EmailAddressPolicy">Get-EmailAddressPolicy <span class="badge badge-new">v1.2</span></h2>
+<p>電子メールアドレスポリシーの構成を取得します（<code>msExchRecipientPolicy</code>）。出力: Name, Priority, RecipientFilter, LdapRecipientFilter, EnabledEmailAddressTemplates, DistinguishedName。</p>
+<div class="note">属性名（<code>msExchPolicyOrder</code>, <code>gatewayProxy</code>）はベストエフォートです。公式ドキュメントに一覧なし。<code>Priority</code> は値が小さいほど高優先。</div>
+<pre><code>Get-EmailAddressPolicy -Server dc01.corp.local</code></pre>
+
+<hr>
+
+<!-- ========================================================== -->
+<h2 id="exchange-recipients">Exchange 受信者（Recipient）系 <span class="badge badge-new">v1.2</span></h2>
+<p>Exchange がスタンプした AD 属性をドメイン NC（既定の名前付けコンテキスト）から読み取ります。Exchange サーバーへの接続は不要です。</p>
+<div class="warn">
+  <strong>制限事項：</strong>
+  <ul>
+    <li>取得できるのは AD にスタンプされたスナップショットのみ。メールボックスサイズ・キュー・サービス稼働状態などの動的情報は取得不可。</li>
+    <li>AD と EMS で属性名・値が異なる場合があります（例: <code>OrganizationalUnit</code> は EMS の "domain/OU" 形式ではなく親 DN 文字列を返します）。</li>
+    <li>動的配布グループの <code>RecipientFilter</code> は OPATH 文字列をそのまま返します。</li>
+    <li>Exchange 未導入環境では空を返します（警告なし）。</li>
+  </ul>
+</div>
+<p><strong>Identity</strong> パラメータにはメールアドレス（<code>user@contoso.com</code>）・alias（mailNickname）・DN・GUID・SID が指定できます。</p>
+
+<h2 id="Get-Recipient">Get-Recipient <span class="badge badge-new">v1.2</span></h2>
+<p>mailNickname が設定された全受信者オブジェクトを取得します。出力: Name, Alias, DisplayName, PrimarySmtpAddress, RecipientType, RecipientTypeDetails, EmailAddresses, HiddenFromAddressListsEnabled, OrganizationalUnit, DistinguishedName。</p>
+<pre><code>Get-Recipient -Server dc01.corp.local
+Get-Recipient -Identity user@contoso.com -Server dc01.corp.local
+Get-Recipient -Filter "DisplayName -like '山田*'" -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-Mailbox">Get-Mailbox <span class="badge badge-new">v1.2</span></h2>
+<p>homeMDB が設定されたメールボックスユーザーを取得します（<code>objectCategory=person</code> かつ <code>homeMDB=*</code>）。出力: Name, Alias, DisplayName, PrimarySmtpAddress, UserPrincipalName, SamAccountName, Database, ExchangeGuid, RecipientTypeDetails, EmailAddresses, HiddenFromAddressListsEnabled, OrganizationalUnit, DistinguishedName。</p>
+<div class="note">
+  <code>Database</code> は homeMDB DN の先頭 CN（例: <code>Mailbox Database 1</code>）。<code>ServerName</code> は homeMDB から確実に取れないため常に null。
+  <code>ExchangeGuid</code> は <code>msExchMailboxGuid</code> を GUID に変換した値。
+</div>
+<pre><code>Get-Mailbox -Server dc01.corp.local
+Get-Mailbox -Identity yamada@contoso.com -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-RemoteMailbox">Get-RemoteMailbox <span class="badge badge-new">v1.2</span></h2>
+<p>msExchRemoteRecipientType が設定されたリモートメールボックスユーザーを取得します（Exchange Online ハイブリッド）。出力: Name, Alias, DisplayName, PrimarySmtpAddress, RemoteRoutingAddress, RemoteRecipientType, RecipientTypeDetails, ExchangeGuid, UserPrincipalName, SamAccountName, EmailAddresses, HiddenFromAddressListsEnabled, OrganizationalUnit, DistinguishedName。</p>
+<div class="note"><code>RemoteRoutingAddress</code> は targetAddress から <code>smtp:</code> プレフィックスを除いたアドレス。<code>RemoteRecipientType</code> はビットマスクをデコードした文字列（例: "Migrated", "ProvisionMailbox, ProvisionArchive"）。</div>
+<pre><code>Get-RemoteMailbox -Server dc01.corp.local
+Get-RemoteMailbox -Identity user@contoso.com -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-MailUser">Get-MailUser <span class="badge badge-new">v1.2</span></h2>
+<p>外部メールアドレス（targetAddress）を持ち、ローカルメールボックスとリモートメールボックスがないユーザーを取得します。出力: Name, Alias, DisplayName, PrimarySmtpAddress, ExternalEmailAddress, RecipientTypeDetails, ExchangeGuid, UserPrincipalName, SamAccountName, EmailAddresses, HiddenFromAddressListsEnabled, OrganizationalUnit, DistinguishedName。</p>
+<div class="note"><code>ExternalEmailAddress</code> は targetAddress をそのまま（<code>smtp:</code> プレフィックス付き）返します。</div>
+<pre><code>Get-MailUser -Server dc01.corp.local
+Get-MailUser -Identity external@fabrikam.com -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-MailContact">Get-MailContact <span class="badge badge-new">v1.2</span></h2>
+<p>mailNickname が設定されたコンタクトオブジェクト（<code>objectClass=contact</code>）を取得します。出力: Name, Alias, DisplayName, PrimarySmtpAddress, ExternalEmailAddress, RecipientTypeDetails, EmailAddresses, HiddenFromAddressListsEnabled, OrganizationalUnit, DistinguishedName。</p>
+<pre><code>Get-MailContact -Server dc01.corp.local
+Get-MailContact -Identity external@fabrikam.com -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-DistributionGroup">Get-DistributionGroup <span class="badge badge-new">v1.2</span></h2>
+<p>mailNickname が設定されたグループオブジェクトを取得します（配布グループ・メール対応セキュリティグループ）。出力: Name, Alias, DisplayName, PrimarySmtpAddress, GroupType, GroupCategory, RecipientTypeDetails, ManagedBy, SamAccountName, EmailAddresses, HiddenFromAddressListsEnabled, OrganizationalUnit, DistinguishedName。</p>
+<pre><code>Get-DistributionGroup -Server dc01.corp.local
+Get-DistributionGroup -Identity "All Staff" -Server dc01.corp.local
+Get-DistributionGroup -Filter "DisplayName -like 'HR*'" -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-DynamicDistributionGroup">Get-DynamicDistributionGroup <span class="badge badge-new">v1.2</span></h2>
+<p>動的配布グループ（<code>msExchDynamicDistributionList</code>）を取得します。出力: Name, Alias, DisplayName, PrimarySmtpAddress, RecipientFilter, LdapRecipientFilter, RecipientContainer, EmailAddresses, HiddenFromAddressListsEnabled, DistinguishedName。</p>
+<div class="note">
+  <code>RecipientFilter</code> は <code>msExchQueryFilter</code>（OPATH 文字列）をそのまま返します。<code>LdapRecipientFilter</code> は <code>msExchDynamicDLFilter</code>（LDAP フィルター文字列）、<code>RecipientContainer</code> は <code>msExchDynamicDLBaseDN</code>。属性名は Microsoft Learn で確認済み。
+  実際のメンバーは動的計算のため取得不可。
+</div>
+<pre><code>Get-DynamicDistributionGroup -Server dc01.corp.local
+Get-DynamicDistributionGroup -Identity "All Users" -Server dc01.corp.local</code></pre>
+
+<h2 id="Get-DistributionGroupMember">Get-DistributionGroupMember <span class="badge badge-new">v1.2</span></h2>
+<p>配布グループの直接メンバーを取得します（非再帰。EMS の Get-DistributionGroupMember と同様）。Identity は必須。出力: Name, Alias, DisplayName, PrimarySmtpAddress, RecipientTypeDetails, SamAccountName, ObjectClass, DistinguishedName。</p>
+<div class="note">1500件超の大規模グループは range 取得で対応します。動的配布グループには使用できません（EMS と同様）。</div>
+<pre><code>Get-DistributionGroupMember -Identity "All Staff" -Server dc01.corp.local
+Get-DistributionGroupMember -Identity "DL-HR@contoso.com" -Server dc01.corp.local -ResultSetSize 500</code></pre>
+
+<hr>
+
+<h2 id="newparams">件数上限・タイムアウト・進捗 <span class="badge badge-new">v1.1</span></h2>
+<p>AD への過負荷を避けるための安全策です。<code>Get-ADUser</code> / <code>Get-ADGroup</code> / <code>Get-ADComputer</code> / <code>Get-ADObject</code> / <code>Get-ADGroupMember</code> で利用できます。</p>
+<table>
+  <tr><th>パラメータ</th><th>既定</th><th>説明</th></tr>
+  <tr><td><code>-ResultSetSize</code></td><td>0（無制限）</td><td>取得件数の上限。超過時は警告を出して打ち切り</td></tr>
+  <tr><td><code>-Timeout</code></td><td>0（無制限）</td><td>処理のタイムアウト秒。超過時は警告を出して打ち切り</td></tr>
+</table>
+<ul>
+  <li>大量取得時は <code>Write-Progress</code> で進捗を表示します（完了時に自動クリア）。</li>
+  <li>既定は無制限のため、従来の取得結果は変わりません。安全に絞りたいときに明示指定してください。</li>
+  <li>内部的に 1000 件ページングを使用し、サーバー負荷を平準化します。</li>
+</ul>
+<pre><code># 最大 500 件、60 秒で打ち切り
+Get-ADUser -Filter "Enabled -eq '`$true'" -Server dc01 -ResultSetSize 500 -Timeout 60
+
+# 巨大グループの再帰展開を安全に
+Get-ADGroupMember -Identity "All-Staff" -Recursive -Server dc01 -ResultSetSize 5000 -Timeout 120</code></pre>
+
+<h3>-Filter のネスト・混在（v1.1）</h3>
+<p>括弧でグループ化し、<code>-and</code> / <code>-or</code> を入れ子・混在できます。生の LDAP フィルターは自動判別してそのまま使用されます。</p>
+<pre><code>Get-ADUser -Filter "Department -eq 'IT' -and (Title -like '*Manager*' -or Title -like '*Director*')" -Server dc01</code></pre>
+
+<hr>
+
+<h2 id="execpolicy">実行ポリシー（RemoteSigned）対策</h2>
+<p>ネットワーク共有上の <code>.ps1</code>/<code>.psm1</code> は RemoteSigned 環境では署名が必要で、<code>Import-Module</code> や <code>. .\ADSearch.ps1</code> が弾かれることがあります。同梱の <code>Import-ADSearch.ps1</code> は各ファイルを文字列として読み込み ScriptBlock 化して取り込むため、ファイル実行ポリシーの影響を受けません。</p>
+<pre><code># ① ローダー自身も ScriptBlock 化して取り込む（1回だけ）
+. ([scriptblock]::Create((Get-Content '\\server\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+# ② フォルダを指定して読み込む
+Import-ADSearch -Path '\\server\tools\ADSearch'</code></pre>
+<div class="note">ローカルにコピーできる環境では、コピー後に <code>Get-ChildItem &lt;フォルダ&gt; | Unblock-File</code> してから通常どおり読み込む方法もあります。</div>
+
+<hr>
+
+<h2 id="limitations">制限事項</h2>
+<table>
+  <tr><th>機能</th><th>制限内容</th></tr>
+  <tr><td>PSO（きめ細かいパスワードポリシー）</td><td><code>CN=Password Settings Container</code> の既定 ACL により、Domain Admins 以外は LDAP で読み取り不可。RSAT（ADWS）を使用してください</td></tr>
+  <tr><td>グローバルカタログ検索</td><td>GC（ポート 3268）を使ったフォレスト横断検索には非対応。ドメインごとに <code>-Server</code> を切り替えて使用</td></tr>
+  <tr><td>DC 列挙</td><td><code>Get-ADDomainController</code> は接続先 DC 1台の情報のみ返す</td></tr>
+  <tr><td>書き込み操作</td><td>このライブラリはすべて読み取り専用（Get 系）です</td></tr>
+  <tr><td>DNS データの詳細解析</td><td>A / AAAA 以外のレコード（SRV, MX, TXT など）の Data フィールドは null。詳細解析が必要な場合は RSAT の DNS Server モジュールを使用</td></tr>
+  <tr><td>フォレスト機能レベル</td><td>Windows Server 2016 までの機能レベル（値 7）に対応。2025 Server 等で新しいレベルが追加された場合は <code>Unknown(n)</code> と表示されます</td></tr>
+  <tr><td>Exchange の動的情報</td><td>キュー・メールボックスサイズ・サービス稼働状態などは AD に存在せず取得不可。構成スナップショットのみ対応</td></tr>
+  <tr><td>Exchange トランスポートルール</td><td>本体は XML blob のため完全復元は行わず、メタdata と生 XML（<code>-IncludeXml</code>）のみ返す</td></tr>
+  <tr><td>再帰メンバーの範囲</td><td><code>Get-ADGroupMember -Recursive</code> は接続先ドメイン内のみ展開。別ドメインメンバー・ForeignSecurityPrincipal は展開・解決されない</td></tr>
+</table>
+
+<!-- ========================================================== -->
+<h2 id="multiforest">マルチドメイン・マルチフォレスト環境</h2>
+<p>ADSearch は接続先 DC のドメインを対象として動作します。別ドメインの情報を取得するには <code>-Server</code> でそのドメインの DC を指定してください。</p>
+
+<pre><code># フォレスト: example.local
+# ドメイン構成: hq.example.local / branch1.example.local / branch2.example.local
+
+# hq ドメインのユーザーを取得
+Get-ADUser -Identity yamada -Server dc01.hq.example.local
+
+# branch1 ドメインのグループを取得
+Get-ADGroup -Identity "Branch1-Staff" -Server dc01.branch1.example.local
+
+# サイト・サブネット情報（フォレスト共通 → どのドメインの DC でも同じ結果）
+Get-ADReplicationSite -Server dc01.hq.example.local
+Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code></pre>
+
+<table>
+  <tr><th>取得対象</th><th>スコープ</th><th>備考</th></tr>
+  <tr><td>ユーザー / グループ / コンピュータ / OU</td><td>ドメイン単位</td><td>接続先 DC のドメインのみ</td></tr>
+  <tr><td>サイト / サブネット / サイトリンク</td><td>フォレスト共通</td><td>どのドメインの DC に接続しても同じ結果</td></tr>
+  <tr><td>GPO / DNS</td><td>ドメイン単位</td><td>接続先 DC のドメインのみ</td></tr>
+  <tr><td>フォレスト情報</td><td>フォレスト共通</td><td>どのドメインの DC でも同じ結果</td></tr>
+  <tr><td>信頼関係</td><td>ドメイン単位</td><td>接続先ドメインの信頼のみ</td></tr>
+</table>
+
+<hr>
+<p style="color:#6b7280; font-size:12px; text-align:center; margin-top:32px;">
+ADSearch v1.2.0 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+</p>
+
+</main>
+</body>
+</html>

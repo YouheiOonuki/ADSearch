@@ -1,0 +1,12 @@
+{
+    "Server":  "dc01.corp.local",
+    "SampleUser":  "adsearch-ol",
+    "SampleGroup":  "ADSearch-OLGroup",
+    "SampleComputer":  "dc01",
+    "UseSSLTest":  false,
+    "UseCredentialTest":  false,
+    "SearchBase":  "",
+    "SampleOU":  "OU=ADSearchTest,DC=corp,DC=local",
+    "SampleDnsName":  "dc01",
+    "SampleInvalidUser":  "zz-nonexistent-sam-99999"
+}

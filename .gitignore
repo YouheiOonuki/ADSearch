@@ -1,0 +1,39 @@
+# OS / エディタの生成物
+desktop.ini
+Thumbs.db
+*.tmp
+
+# テスト実行時の一時ファイル
+forTest/_*.ps1
+
+# --- estate-audit 共通ベースライン（2026-08-02） ---
+# 秘密と再発ごみの共通除外。個別の事情がある行は、このブロックより上に
+# 書くこと（下に足すと、次回ベースラインを更新したとき紛れる）。
+#
+# .env* を丸ごと落としたうえで .env.example だけ戻す。テンプレートは
+# 追跡されるべきもので、これが無いと復元手順が repo から消える。
+.env
+.env.*
+!.env.example
+
+# 一括編集の退避コピー。*.bak は末尾一致なので .bak-<日付> を拾わない。
+# 2026-08-01 に ObsidianClaudeLog で実際に取りこぼしている。
+*.bak
+*.bak-*
+*.backup
+*.backup_*
+
+# 鍵・認証情報のファイル名。GCP の SA 鍵は「使わない」方針だが、
+# 方針は置いてしまった1回を防がない。
+secret.json
+secrets.json
+credentials.json
+service-account*.json
+*-sa.json
+id_rsa
+id_rsa.*
+.netrc
+.npmrc
+
+# 秘密の所在を書いた走査結果。本文より公開してはいけない。
+findings/
