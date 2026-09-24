@@ -106,7 +106,7 @@ function Get-ADComputer {
     )
 
     try {
-        $f = ADSI_BuildFinalFilter '(objectCategory=computer)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectCategory=computer)' $Identity $LDAPFilter $Filter -IdentityKind Computer
         if ($Identity) {
             $r = @(ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
                     -SearchBase $SearchBase -SearchScope $SearchScope `
@@ -340,7 +340,7 @@ function Get-ADServiceAccount {
     )
 
     try {
-        $f = ADSI_BuildFinalFilter '(|(objectClass=msDS-GroupManagedServiceAccount)(objectClass=msDS-ManagedServiceAccount))' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(|(objectClass=msDS-GroupManagedServiceAccount)(objectClass=msDS-ManagedServiceAccount))' $Identity $LDAPFilter $Filter -IdentityKind Computer
         if ($Identity) {
             $r = @(ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
                     -SearchBase $SearchBase -SearchScope $SearchScope -Properties $Properties -Filter $f `

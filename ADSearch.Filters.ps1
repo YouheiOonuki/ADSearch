@@ -116,14 +116,15 @@ $script:ADSI_NonFilterableProps = @(
 # ISO 8601 系の明示フォーマットのみ受理し、端末ロケール差による誤解釈を防ぐ。
 # タイムゾーン指定のない値はローカル時刻として扱う（RSAT と同じ挙動）。
 function ADSI_ParseFilterDate([string]$s) {
+    # M / d / H は 1 桁・2 桁のどちらも受理する（2026/1/5 と 2026/01/05 は同じ）
     $formats = [string[]]@(
-        'yyyy-MM-dd',
-        'yyyy-MM-ddTHH:mm:ss',
-        'yyyy-MM-dd HH:mm:ss',
-        'yyyy-MM-dd HH:mm',
-        'yyyy/MM/dd',
-        'yyyy/MM/dd HH:mm:ss',
-        'yyyy/MM/dd HH:mm'
+        'yyyy-M-d',
+        'yyyy-M-dTH:mm:ss',
+        'yyyy-M-d H:mm:ss',
+        'yyyy-M-d H:mm',
+        'yyyy/M/d',
+        'yyyy/M/d H:mm:ss',
+        'yyyy/M/d H:mm'
     )
     $ci = [System.Globalization.CultureInfo]::InvariantCulture
     $styles = [System.Globalization.DateTimeStyles]::AssumeLocal
@@ -131,7 +132,7 @@ function ADSI_ParseFilterDate([string]$s) {
     if ([datetime]::TryParseExact($s, $formats, $ci, $styles, [ref]$dt)) {
         return $dt
     }
-    throw "'$s' を日時として解釈できません（対応形式: yyyy-MM-dd[ HH:mm[:ss]] / yyyy/MM/dd[ HH:mm[:ss]]）"
+    throw "'$s' を日時として解釈できません（対応形式: yyyy-MM-dd[ HH:mm[:ss]] / yyyy/MM/dd[ HH:mm[:ss]]。月・日・時は 1 桁でも可）"
 }
 
 function ADSI_ConvertComparison {
@@ -151,17 +152,19 @@ function ADSI_ConvertComparison {
     $op    = $matches[2].ToLowerInvariant()
     $right = $matches[3].Trim()
 
+    # 引用符を外してから $true/$false を判定する（'$true' のように引用符付きでも真偽値として扱う）
+    if ($right.Length -ge 2 -and (
+        ($right.StartsWith("'") -and $right.EndsWith("'")) -or
+        ($right.StartsWith('"') -and $right.EndsWith('"'))
+    )) {
+        $right = $right.Substring(1, $right.Length - 2)
+    }
+
     if ($right -ieq '$true') {
         $right = 'TRUE'
     }
     elseif ($right -ieq '$false') {
         $right = 'FALSE'
-    }
-    elseif (
-        ($right.StartsWith("'") -and $right.EndsWith("'")) -or
-        ($right.StartsWith('"') -and $right.EndsWith('"'))
-    ) {
-        $right = $right.Substring(1, $right.Length - 2)
     }
 
     $leftKey = $left.ToLowerInvariant()
@@ -419,8 +422,16 @@ function ADSI_ConvertFilterToLDAP {
     return ADSI_AndFilters $ObjectFilter (ADSI_PsFilterToLdap $Filter)
 }
 
+# -Identity を LDAP フィルターにする。Kind でオブジェクトの種類ごとの RSAT の受理形式に合わせる
+#   Account: DN / GUID / SID / sAMAccountName（ユーザー・グループなど）
+#   Computer: Account に加え、末尾 `$` を省いた sAMAccountName も受理（RSAT の Get-ADComputer pc001 と同じ）
+#   Name: DN / GUID / name（sAMAccountName を持たない構成オブジェクト。信頼・サイト・Exchange 構成など）
 function ADSI_ResolveIdentityFilter {
-    param([string]$Identity)
+    param(
+        [string]$Identity,
+        [ValidateSet('Account','Computer','Name')]
+        [string]$Kind = 'Account'
+    )
 
     if ([string]::IsNullOrWhiteSpace($Identity)) {
         return $null
@@ -445,9 +456,18 @@ function ADSI_ResolveIdentityFilter {
         catch {}
     }
 
+    $e = ADSI_EscapeLdapValue $id
+
+    if ($Kind -eq 'Name') {
+        return "(name=$e)"
+    }
+
+    if ($Kind -eq 'Computer' -and -not $id.EndsWith('$')) {
+        return "(|(sAMAccountName=$e)(sAMAccountName=$e`$))"
+    }
+
     # RSAT の -Identity は DN / GUID / SID / sAMAccountName のみ受理。cn/name/UPN/mail での
     # 曖昧一致は誤オブジェクト取得防止のため廃止（旧: @ を含む場合の UPN/mail 分岐、cn/name フォールバック）。
-    $e = ADSI_EscapeLdapValue $id
     return "(sAMAccountName=$e)"
 }
 
@@ -456,11 +476,13 @@ function ADSI_BuildFinalFilter {
         [string]$ObjectFilter,
         [string]$Identity,
         [string]$LDAPFilter,
-        [string]$Filter
+        [string]$Filter,
+        [ValidateSet('Account','Computer','Name')]
+        [string]$IdentityKind = 'Account'
     )
 
     if ($Identity) {
-        return ADSI_AndFilters $ObjectFilter (ADSI_ResolveIdentityFilter $Identity)
+        return ADSI_AndFilters $ObjectFilter (ADSI_ResolveIdentityFilter $Identity -Kind $IdentityKind)
     }
 
     if ($LDAPFilter) {

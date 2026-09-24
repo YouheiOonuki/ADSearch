@@ -420,7 +420,7 @@ function Get-ADTrust {
 
     try {
         $nc = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
-        $f  = ADSI_BuildFinalFilter '(objectClass=trustedDomain)' $Identity $LDAPFilter $Filter
+        $f  = ADSI_BuildFinalFilter '(objectClass=trustedDomain)' $Identity $LDAPFilter $Filter -IdentityKind Name
         $raw = ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase "CN=System,$($nc.Default)" `
             -Filter $f `
@@ -459,7 +459,7 @@ function Get-ADReplicationSite {
 
     try {
         $nc = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
-        $f  = ADSI_BuildFinalFilter '(objectClass=site)' $Identity $LDAPFilter $Filter
+        $f  = ADSI_BuildFinalFilter '(objectClass=site)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase "CN=Sites,$($nc.Config)" `
             -Filter $f `
@@ -481,7 +481,7 @@ function Get-ADReplicationSiteLink {
 
     try {
         $nc = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
-        $f  = ADSI_BuildFinalFilter '(objectClass=siteLink)' $Identity $LDAPFilter $Filter
+        $f  = ADSI_BuildFinalFilter '(objectClass=siteLink)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase "CN=Inter-Site Transports,CN=Sites,$($nc.Config)" `
             -Filter $f `
@@ -504,7 +504,7 @@ function Get-ADReplicationSubnet {
 
     try {
         $nc = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
-        $f  = ADSI_BuildFinalFilter '(objectClass=subnet)' $Identity $LDAPFilter $Filter
+        $f  = ADSI_BuildFinalFilter '(objectClass=subnet)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase "CN=Subnets,CN=Sites,$($nc.Config)" `
             -Filter $f `
@@ -527,7 +527,7 @@ function Get-ADReplicationConnection {
 
     try {
         $nc = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
-        $f  = ADSI_BuildFinalFilter '(objectClass=nTDSConnection)' $Identity $LDAPFilter $Filter
+        $f  = ADSI_BuildFinalFilter '(objectClass=nTDSConnection)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase $nc.Config `
             -Filter $f `

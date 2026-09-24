@@ -249,7 +249,7 @@
 <main>
 
 <h1>ADSearch リファレンスマニュアル</h1>
-<p class="subtitle">Version 1.4.0 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+<p class="subtitle">Version 1.4.1 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
@@ -324,7 +324,7 @@ ActiveDirectory\Get-ADUser -Identity yamada</code></pre>
 <ul>
   <li><strong>cn / name / UPN / mail による曖昧一致は廃止しました。</strong>以前は <code>yamada@corp.local</code> のような値でも UPN やメールアドレスで一致していましたが、別のオブジェクトを取得してしまうのを防ぐため、現在は sAMAccountName としてしか照合しません。UPN・メールアドレス・表示名で探すときは <code>-Filter</code> を使ってください（例: <code>-Filter "UserPrincipalName -eq 'yamada@corp.local'"</code>、<code>-Filter "EmailAddress -eq 'yamada@corp.local'"</code>）。</li>
   <li><strong>見つからないときは例外になります。</strong><code>Get-ADUser</code> / <code>Get-ADGroup</code> / <code>Get-ADComputer</code> / <code>Get-ADOrganizationalUnit</code> / <code>Get-ADObject</code> / <code>Get-ADServiceAccount</code> は、<code>-Identity</code> に一致するオブジェクトがないと「オブジェクトが見つかりません (Identity='…')」という例外を投げます（RSAT と同じ。以前は空を返していました）。これらを内部で呼ぶ <code>Get-ADGroupMember</code> と <code>Get-ADGpoLink</code> も同様です。</li>
-  <li>コンピュータの sAMAccountName は末尾に <code>$</code> が付きます（<code>PC001$</code>）。<code>Get-ADComputer -Identity</code> では <code>$</code> 付きで指定するか、<code>-Filter "Name -eq 'PC001'"</code> を使ってください。gMSA / sMSA（<code>Get-ADServiceAccount</code>）も同じです。</li>
+  <li>コンピュータの sAMAccountName は末尾に <code>$</code> が付きます（<code>PC001$</code>）。<code>Get-ADComputer</code> と gMSA / sMSA（<code>Get-ADServiceAccount</code>）の <code>-Identity</code> は、RSAT と同じく <code>$</code> を省いても一致します（<code>Get-ADComputer PC001</code>。v1.4.1 から）。</li>
   <li><code>-Identity</code> を指定したときは <code>-Filter</code> / <code>-LDAPFilter</code> は使われません。</li>
 </ul>
 <table>
@@ -332,7 +332,7 @@ ActiveDirectory\Get-ADUser -Identity yamada</code></pre>
   <tr><td><code>Get-ADUserHealth</code></td><td>上の 4 形式に加えて、<code>@</code> を含む値は UPN またはメールアドレスとして検索します。見つからないときは例外</td></tr>
   <tr><td><code>Get-ADComputerHealth</code></td><td>コンピュータ名は末尾 <code>$</code> の有無どちらでも指定できます（<code>$</code> 無しで見つからなければ <code>$</code> 付きで再検索）。見つからないときは例外</td></tr>
   <tr><td><code>Get-ADOrganizationalUnit</code></td><td>OU には sAMAccountName と SID がないため、実際に一致するのは DN と ObjectGUID だけです。名前で探すときは <code>-Filter "Name -eq 'Tokyo'"</code></td></tr>
-  <tr><td><code>Get-ADTrust</code> / <code>Get-ADReplicationSite</code> / <code>Get-ADReplicationSiteLink</code> / <code>Get-ADReplicationSubnet</code> / <code>Get-ADReplicationConnection</code> / Exchange 構成系（<code>Get-ExchangeServer</code> ほか 12 コマンド）</td><td>同じ規則で照合しますが、これらのオブジェクトには sAMAccountName がないため、名前を指定しても一致しません。DN・ObjectGUID で指定するか、<code>-Filter "Name -eq '…'"</code> を使ってください。見つからないときは例外ではなく空を返します</td></tr>
+  <tr><td><code>Get-ADTrust</code> / <code>Get-ADReplicationSite</code> / <code>Get-ADReplicationSiteLink</code> / <code>Get-ADReplicationSubnet</code> / <code>Get-ADReplicationConnection</code> / Exchange 構成系（<code>Get-ExchangeServer</code> ほか 12 コマンド）</td><td>これらのオブジェクトには sAMAccountName がないため、DN・ObjectGUID に加えて<strong>名前（name 属性の完全一致）</strong>で照合します（例: <code>Get-ADTrust -Identity child.corp.local</code>、<code>Get-AddressList -Identity "All Users"</code>。v1.4.1 から。v1.4.0 では名前を指定しても一致しませんでした）。見つからないときは例外ではなく空を返します</td></tr>
   <tr><td><code>Get-ADDomain</code> / <code>Get-ADForest</code></td><td><code>-Server</code> を省略したときに限り、<code>-Identity</code> の値（ドメイン名など）を接続先として使います</td></tr>
   <tr><td><code>Get-ADDomainController</code></td><td>取得した DC の Name / HostName とワイルドカードで照合します（例: <code>dc0*</code>）。見つからないときは空</td></tr>
   <tr><td>Exchange 受信者系（<code>Get-Recipient</code> ほか）</td><td>独自の規則です（「<a href="#exchange-recipients">Exchange 受信者系</a>」参照）。v1.4 の変更の対象外です</td></tr>
@@ -371,7 +371,7 @@ $u.SID -eq 'S-1-5-21-...'      # 文字列とは直接比較しない。$u.SID.V
   <tr><td><code>-or</code></td><td>OR 結合</td><td><code>"Name -like 'web*' -or Name -like 'app*'"</code></td></tr>
 </table>
 <div class="note">括弧でグループ化すれば <code>-and</code> と <code>-or</code> を入れ子・混在できます（v1.1 から。例: <code>"Department -eq 'IT' -and (Title -like '*Manager*' -or Title -like '*Director*')"</code>）。演算子を含まない <code>(</code> で始まる文字列は生の LDAP フィルターとしてそのまま使います。<code>-Filter *</code> は全件です。</div>
-<div class="warn"><strong>$true / $false の書き方：</strong> 真偽値は <code>'Enabled -eq $false'</code>（全体を単一引用符で囲む）か、<code>"Enabled -eq 'False'"</code> のように書きます。<code>"Enabled -eq '`$false'"</code> のように <code>$false</code> そのものを引用符で囲むと真偽値として解釈されず、正しく絞り込めません。</div>
+<div class="note"><strong>$true / $false の書き方：</strong> <code>'Enabled -eq $false'</code>、<code>"Enabled -eq 'False'"</code>、<code>"Enabled -eq '`$false'"</code> のどれでも同じ意味になります（v1.4.1 から。v1.4.0 までは <code>$false</code> そのものを引用符で囲むと真偽値として解釈されず、正しく絞り込めませんでした）。</div>
 
 <h3>-Filter で使える拡張プロパティ（v1.4）</h3>
 <p>次のプロパティは LDAP 属性の形式に合わせて自動変換します（プロパティ名の大文字小文字は区別しません）。</p>
@@ -381,7 +381,7 @@ $u.SID -eq 'S-1-5-21-...'      # 文字列とは直接比較しない。$u.SID.V
   <tr><td>日時（Generalized-Time 属性）</td><td><code>Created</code>（whenCreated）/ <code>Modified</code>（whenChanged）</td><td>同上</td><td>日時文字列</td></tr>
   <tr><td>userAccountControl のビット</td><td><code>Enabled</code> / <code>PasswordNeverExpires</code> / <code>PasswordNotRequired</code> / <code>SmartcardLogonRequired</code> / <code>TrustedForDelegation</code></td><td><code>-eq</code> <code>-ne</code></td><td><code>$true</code> / <code>$false</code>（ビット判定の拡張マッチルール <code>1.2.840.113556.1.4.803</code> に変換）</td></tr>
 </table>
-<p>日時文字列として受け付ける形式は <code>yyyy-MM-dd</code>、<code>yyyy-MM-dd HH:mm</code>、<code>yyyy-MM-dd HH:mm:ss</code>、<code>yyyy-MM-ddTHH:mm:ss</code>、<code>yyyy/MM/dd</code>、<code>yyyy/MM/dd HH:mm</code>、<code>yyyy/MM/dd HH:mm:ss</code> です。端末の地域設定に左右されないよう、これ以外の形式はエラーにしています。タイムゾーンの指定がない値はローカル時刻として扱います。</p>
+<p>日時文字列として受け付ける形式は <code>yyyy-MM-dd</code>、<code>yyyy-MM-dd HH:mm</code>、<code>yyyy-MM-dd HH:mm:ss</code>、<code>yyyy-MM-ddTHH:mm:ss</code>、<code>yyyy/MM/dd</code>、<code>yyyy/MM/dd HH:mm</code>、<code>yyyy/MM/dd HH:mm:ss</code> です。月・日・時は 1 桁でも構いません（<code>2026/1/5 9:05</code>。v1.4.1 から）。端末の地域設定に左右されないよう、これ以外の形式（<code>01/05/2026</code>、<code>Jan 5 2026</code> など）はエラーにしています。タイムゾーンの指定がない値はローカル時刻として扱います。</p>
 <pre><code># 90 日以上パスワードを変更していないユーザー
 $d = (Get-Date).AddDays(-90).ToString('yyyy-MM-dd')
 Get-ADUser -Filter "PasswordLastSet -le '$d'" -Server dc01.corp.local
@@ -542,7 +542,7 @@ Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local |
 Get-ADComputer [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;] [-Server &lt;string&gt;] [-UseSSL]
                [-Credential &lt;PSCredential&gt;] [-SearchBase &lt;string&gt;] [-SearchScope &lt;string&gt;]
                [-Properties &lt;string[]&gt;] [-ResultSetSize &lt;int&gt;] [-Timeout &lt;int&gt;]</code></pre>
-<p><code>-Identity</code> は DN / ObjectGUID / SID / sAMAccountName で指定し、見つからないときは例外になります。コンピュータの sAMAccountName は末尾に <code>$</code> が付く（<code>PC001$</code>）ため、名前で指定するときは <code>$</code> を付けるか、<code>-Filter "Name -eq 'PC001'"</code> を使ってください。<code>$</code> の有無を気にせず調べたいときは <a href="#Get-ADComputerHealth"><code>Get-ADComputerHealth</code></a> が使えます。</p>
+<p><code>-Identity</code> は DN / ObjectGUID / SID / sAMAccountName で指定し、見つからないときは例外になります。コンピュータの sAMAccountName は末尾に <code>$</code> が付きます（<code>PC001$</code>）が、RSAT と同じく <code>$</code> を省いて <code>Get-ADComputer PC001</code> と指定しても一致します（v1.4.1 から）。</p>
 
 <h3>既定の出力プロパティ</h3>
 <p>DistinguishedName, Name, SamAccountName, DNSHostName, OperatingSystem, Enabled, LastLogonDate, PasswordLastSet, MachinePasswordAge, IPv4Address, ObjectGUID, SID, ObjectClass</p>
@@ -552,8 +552,8 @@ Get-ADComputer [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;] [-Server &l
 <pre><code># コンピュータ名で取得（sAMAccountName は末尾 $ 付き）
 Get-ADComputer -Identity 'PC001$' -Server dc01.corp.local
 
-# 名前（$ 無し）で取得
-Get-ADComputer -Filter "Name -eq 'PC001'" -Server dc01.corp.local
+# $ を省いても同じ（v1.4.1 から）
+Get-ADComputer PC001 -Server dc01.corp.local
 
 # OS で絞り込み
 Get-ADComputer -Filter "OperatingSystem -like '*Server 2022*'" -Server dc01.corp.local
@@ -1147,7 +1147,8 @@ Get-TransportRule -Server dc01.corp.local -IncludeXml</code></pre>
 <pre><code>Get-AddressList [-Identity &lt;string&gt;] [-Filter &lt;string&gt;] [-LDAPFilter &lt;string&gt;]
                 [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;] [-Timeout &lt;int&gt;]</code></pre>
 <div class="note"><code>RecipientFilter</code> は <code>msExchQueryFilter</code>（OPATH 文字列）、<code>LdapRecipientFilter</code> は <code>purportedSearch</code>（LDAP フィルター文字列）をそのまま返します。</div>
-<pre><code>Get-AddressList -Server dc01.corp.local</code></pre>
+<pre><code>Get-AddressList -Server dc01.corp.local
+Get-AddressList -Identity "All Users" -Server dc01.corp.local   # 名前で 1 件（v1.4.1 から）</code></pre>
 
 <h2 id="Get-GlobalAddressList">Get-GlobalAddressList <span class="badge badge-new">v1.2</span></h2>
 <p>グローバルアドレスリスト（GAL）の構成を取得します（<code>addressBookContainer</code> — "All Global Address Lists" 配下）。出力: Name, RecipientFilter, LdapRecipientFilter, Container, DistinguishedName。</p>
@@ -1404,6 +1405,15 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <!-- ========================================================== -->
 <h2 id="changelog">変更履歴</h2>
+<h3>1.4.1（2026-09-24）</h3>
+<p>1.4.0 のドキュメントとコードを突き合わせて見つかった不具合を修正しました。</p>
+<ul>
+  <li><strong>-Filter の真偽値：</strong><code>"PasswordNeverExpires -eq '`$true'"</code> のように <code>$true</code> / <code>$false</code> を引用符で囲むと一致しなかった問題を修正</li>
+  <li><strong>Get-ADComputer / Get-ADServiceAccount：</strong><code>-Identity</code> で末尾 <code>$</code> を省いた名前（<code>Get-ADComputer PC001</code>）が見つからなかった問題を修正（RSAT と同じ動きに）</li>
+  <li><strong>構成オブジェクトの -Identity：</strong><code>Get-ADTrust</code> / <code>Get-ADReplication*</code> / Exchange 構成系で、1.4.0 の厳格化により名前で指定しても一致しなくなっていた問題を修正。DN・ObjectGUID・名前で照合します</li>
+  <li><strong>-Filter の日時：</strong>月・日・時の 1 桁（<code>2026/1/5</code>）を受け付けるように変更</li>
+  <li><strong>テスト：</strong>AD なしで <code>-Filter</code> / <code>-Identity</code> の変換を確かめる <code>forTest/Test-ADSearchOffline.ps1</code> を追加</li>
+</ul>
 <h3>1.4.0（2026-07-09）</h3>
 <p>RSAT との差異の見直しを受けて互換性を強化し、トラブルシュート向けのコマンドを追加しました。</p>
 <ul>
@@ -1433,7 +1443,7 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <hr>
 <p style="color:#6b7280; font-size:12px; text-align:center; margin-top:32px;">
-ADSearch v1.4.0 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+ADSearch v1.4.1 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 
 </main>
