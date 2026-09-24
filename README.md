@@ -57,6 +57,15 @@ Import-ADSearch -Path '\\fileserver\tools\ADSearch'
 
 `-Identity` は RSAT 準拠になりました。受理する形式は **DN / ObjectGUID / SID / sAMAccountName** のみです。従来対応していた `cn`/`name`/`UserPrincipalName`/`mail` での曖昧一致は、誤オブジェクト取得防止のため**廃止**しました。該当する識別子で検索したい場合は `-Filter` を使用してください。
 
+オブジェクトの種類による違い（v1.4.1）:
+
+| コマンド | `-Identity` で受理する形式 |
+|---|---|
+| `Get-ADUser` / `Get-ADGroup` / `Get-ADObject` など | DN / ObjectGUID / SID / sAMAccountName |
+| `Get-ADComputer` / `Get-ADServiceAccount` | 上に加え、末尾 `$` を省いた名前（`Get-ADComputer pc001` で `pc001$` が見つかる。RSAT と同じ） |
+| `Get-ADTrust` / `Get-ADReplication*` / Exchange 構成系（`Get-ExchangeServer` / `Get-AcceptedDomain` / `Get-AddressList` など） | DN / ObjectGUID / 名前（`name` 属性）。sAMAccountName を持たないオブジェクトのため |
+| Exchange 受信者系（`Get-Mailbox` など） | 下記「Exchange 受信者（Recipient）系の取得」を参照 |
+
 また、`-Identity` 指定時に対象オブジェクトが見つからない場合、従来は空を返していましたが、RSAT と同様に **throw（例外）** するようになりました。
 
 ```powershell
@@ -127,13 +136,18 @@ Get-ADUser -Identity yamada -Properties PasswordExpiryDate,PasswordNeverExpires 
 
 | 種別 | プロパティ | 使用可能な演算子 | 備考 |
 |---|---|---|---|
-| 日時（FileTime） | `LastLogonDate` / `PasswordLastSet` / `AccountExpirationDate` / `LastBadPasswordAttempt` / `AccountLockoutTime` | `-eq`/`-ne`/`-ge`/`-le`/`-gt`/`-lt` | 右辺は FileTime の int64、または `[datetime]::Parse` 可能な文字列 |
-| 日時（Generalized-Time） | `Created` / `Modified` | 同上 | 右辺は `[datetime]::Parse` 可能な文字列 |
+| 日時（FileTime） | `LastLogonDate` / `PasswordLastSet` / `AccountExpirationDate` / `LastBadPasswordAttempt` / `AccountLockoutTime` | `-eq`/`-ne`/`-ge`/`-le`/`-gt`/`-lt` | 右辺は FileTime の int64、または日時の文字列（下記） |
+| 日時（Generalized-Time） | `Created` / `Modified` | 同上 | 右辺は日時の文字列（下記） |
 | UAC ビット | `PasswordNeverExpires` / `PasswordNotRequired` / `SmartcardLogonRequired` / `TrustedForDelegation` | `-eq`/`-ne`（`$true`/`$false`のみ） | `Enabled` と同様の拡張マッチルール（`:1.2.840.113556.1.4.803:`）を使用 |
 
+日時の文字列は、PC の言語設定で解釈が変わらないよう、次の形式だけを受け付けます（時刻を省くと 0 時。タイムゾーンは PC の設定）:
+`yyyy-MM-dd` / `yyyy/MM/dd`、それぞれに ` HH:mm` または ` HH:mm:ss`、および `yyyy-MM-ddTHH:mm:ss`。月・日・時は 1 桁でも構いません（`2026/1/5 9:05`）。`01/05/2026` や `Jan 5 2026` はエラーになります。
+
+真偽値は `$true` / `'$true'` / `"$true"` のどれでも同じ意味です（v1.4.1 から。v1.4.0 までは引用符付きの `'$true'` が一致しませんでした）。
+
 ```powershell
-# 90日以上パスワード未変更のユーザー
-Get-ADUser -Filter "PasswordLastSet -le '$(([datetime]::Now.AddDays(-90)).ToString())'" -Server dc01
+# 90日以上パスワード未変更のユーザー（日付は yyyy-MM-dd で渡す）
+Get-ADUser -Filter "PasswordLastSet -le '$((Get-Date).AddDays(-90).ToString('yyyy-MM-dd'))'" -Server dc01
 
 # パスワード無期限のユーザー
 Get-ADUser -Filter "PasswordNeverExpires -eq '`$true'" -Server dc01
@@ -319,7 +333,7 @@ Get-OfflineAddressBook    -Server dc01.corp.local   # オフラインアドレ�
 Get-EmailAddressPolicy    -Server dc01.corp.local   # 電子メールアドレスポリシー
 ```
 
-Identity パラメータにはメールアドレス（`user@contoso.com`）、alias、DN、GUID が指定できます。
+受信者系コマンドの Identity パラメータには DN、GUID、SID のほか、`@` を含む値ならメールアドレス・UPN・proxyAddresses、含まない値なら alias（mailNickname）・sAMAccountName・cn・name が指定できます（Exchange 管理シェルに近い受け付け方。複数一致することがあります）。
 
 ### ハイブリッド / Entra Connect 向け属性
 
@@ -459,3 +473,13 @@ ADSearch/
   ADSearch.SelfTest.ps1  接続テスト
   forTest/               テスト用スクリプト・サンプルデータ生成
 ```
+
+### AD なしで確かめる（オフラインテスト）
+
+`-Filter` / `-Identity` から作る LDAP フィルターが正しいかを、ドメインに接続せずに確かめられます（AD への問い合わせは偽物に差し替えます）。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\forTest\Test-ADSearchOffline.ps1
+```
+
+最後に「すべて OK」と出れば成功です。AD に接続して動作を見るテストは `forTest/test_all.ps1`（`test_all.config.json` に接続先を書く）です。

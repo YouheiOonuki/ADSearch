@@ -99,7 +99,7 @@ function Get-ExchangeServer {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchExchangeServer)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchExchangeServer)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('serialNumber','msExchCurrentServerRoles','networkAddress','msExchServerSite') `
@@ -136,7 +136,7 @@ function Get-ReceiveConnector {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchSmtpReceiveConnector)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchSmtpReceiveConnector)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchSmtpReceiveBindings','msExchSmtpReceiveRemoteIPRanges','msExchSmtpReceiveType') `
@@ -175,7 +175,7 @@ function Get-SendConnector {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchRoutingSMTPConnector)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchRoutingSMTPConnector)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchSmartHostList','msExchSourceBridgeheadServersDN') `
@@ -211,7 +211,7 @@ function Get-AcceptedDomain {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchAcceptedDomain)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchAcceptedDomain)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchAcceptedDomainName','msExchAcceptedDomainFlags') `
@@ -249,7 +249,7 @@ function Get-RemoteDomain {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchDomainContentConfig)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchDomainContentConfig)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchInteropDomain') `
@@ -286,7 +286,7 @@ function Get-TransportRule {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchTransportRule)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchTransportRule)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchTransportRulePriority','msExchTransportRuleState','msExchTransportRuleXml') `
@@ -324,7 +324,7 @@ function Get-MailboxDatabase {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchPrivateMDB)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchPrivateMDB)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchOwningServer') `
@@ -358,7 +358,7 @@ function Get-DatabaseAvailabilityGroup {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchMDBAvailabilityGroup)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchMDBAvailabilityGroup)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchMDBAvailabilityGroupServersBL') `
@@ -418,7 +418,7 @@ function Get-AddressList {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=addressBookContainer)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=addressBookContainer)' $Identity $LDAPFilter $Filter -IdentityKind Name
         $base = ADSI_AddressListsBase -Server $Server -UseSSL:$UseSSL -Credential $Credential
         ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase $base -SearchScope Subtree -NamingContext Config `
@@ -466,7 +466,7 @@ function Get-GlobalAddressList {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=addressBookContainer)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=addressBookContainer)' $Identity $LDAPFilter $Filter -IdentityKind Name
         $base = ADSI_GalBase -Server $Server -UseSSL:$UseSSL -Credential $Credential
         ADSI_Query -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -SearchBase $base -SearchScope Subtree -NamingContext Config `
@@ -514,7 +514,7 @@ function Get-OfflineAddressBook {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchOAB)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchOAB)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchOABAddressLists','msExchOABFlags') `
@@ -560,7 +560,7 @@ function Get-EmailAddressPolicy {
         [int]$Timeout = 0
     )
     try {
-        $f = ADSI_BuildFinalFilter '(objectClass=msExchRecipientPolicy)' $Identity $LDAPFilter $Filter
+        $f = ADSI_BuildFinalFilter '(objectClass=msExchRecipientPolicy)' $Identity $LDAPFilter $Filter -IdentityKind Name
         ADSI_ExchangeRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -DefaultProps @('Name','DistinguishedName') `
             -Properties @('msExchQueryFilter','purportedSearch','msExchPolicyOrder','gatewayProxy') `
