@@ -53,7 +53,7 @@ Under RemoteSigned, `.ps1`/`.psm1` files on a network share must be signed, so b
 Import-ADSearch -Path '\\fileserver\tools\ADSearch'
 ```
 
-If you can copy the files locally, you can also run `Unblock-File *` on the copy and load it normally.
+If you can copy the files locally, running `Unblock-File *` on the copy also lets it load normally.
 
 ---
 
