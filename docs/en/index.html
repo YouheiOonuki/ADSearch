@@ -112,10 +112,9 @@
         <li><strong>Read-only</strong>: nothing in AD is changed</li>
         <li>Free, MIT license. PowerShell 5.1 or later</li>
       </ul>
-      <p class="kind">Messages and warnings from the module are in Japanese. The English README explains the common ones.</p>
+      <p class="kind">Messages and warnings from the module are in Japanese. The English README (README.en.md in the ZIP) explains the common ones.</p>
       <div class="btn-row">
-        <a class="btn" href="https://github.com/YouheiOonuki/ADSearch" target="_blank" rel="noopener">View and download on GitHub</a>
-        <a class="btn btn-sub" href="https://github.com/YouheiOonuki/ADSearch/blob/main/README.en.md" target="_blank" rel="noopener">English README</a>
+        <a class="btn" href="../ADSearch.zip" download>Download (ZIP)</a>
       </div>
     </section>
 
@@ -137,13 +136,13 @@
     <section class="card content" aria-labelledby="h-get">
       <h2 id="h-get">Download and load</h2>
       <ol>
-        <li>On GitHub, choose "Code → Download ZIP" and put the folder on your machine or a file share</li>
+        <li>Download the ZIP with the button above, unzip it and put the <code>ADSearch</code> folder on your machine or a file share</li>
         <li>Load it in PowerShell</li>
       </ol>
 <pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1</code></pre>
       <details class="more">
-        <summary>File share, git clone and the execution policy</summary>
-        <p>Or <code>git clone https://github.com/YouheiOonuki/ADSearch</code>. From a file share:</p>
+        <summary>File share and the execution policy</summary>
+        <p>From a file share:</p>
 <pre><code>Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
         <p>If the execution policy (RemoteSigned etc.) blocks it, use the bundled <code>Import-ADSearch.ps1</code>.</p>
 <pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
