@@ -3,97 +3,97 @@
    色はトークン（--bg / --card / --text / --muted / --accent / --border）だけを使う。
    ダークモードは端末の設定に自動で合わせる（prefers-color-scheme。手動切替は付けない）
    =========================== */
-/* yorozu-common:begin v1 — サイト共通の部品とトークン。正本は youheioonuki.github.io の tools/common/yorozu-common.css。
-   この begin〜end の間は手で直さない（tools/sync-common.mjs で全ツールに配る。ツール固有の上書きは end の後に書く）。
-   出どころ（2026-10-03 確認。yorozu-plans 企画書 59）:
-   - デジタル庁デザインシステム https://design.digital.go.jp/dads/ のコンテンツを加工して作成
-     （フォーカスの輪・リンクの下線・字の大きさの下限・行間・入力欄のエラー表示）。
-     トークンの値は @digital-go-jp/design-tokens 2.0.1（MIT, (c) 2023 デジタル庁）から
-   - GOV.UK Frontend 6.5.1（MIT, (c) Crown copyright）の考え方: visually-hidden、エラーの文の前に読み上げ用の語
-   - 色は和紙風のまま（値は 2026-09-23 からの共通の値）。Web フォントは読まない（ROADMAP 3.3・D2） */
-:root {
-  color-scheme: light dark;
-  --bg: #f0ebe0;
-  --bg-2: #e6dfd0;
-  --card: #faf6ee;
-  --text: #3a3025;
-  --muted: #6e604f;          /* 本文の補足。--bg の上で 5.1:1 */
-  --accent: #8b4513;
-  --accent-soft: #f3e6d8;
-  --border: #cfc0a0;         /* 飾りの線（区切り）だけ。操作できる物の枠には --input-border */
-  --input-border: #857561;   /* 入力欄の枠。WCAG 1.4.11 の 3:1（--bg で 3.7:1）。DADS の入力欄は gray-600 の 1px */
-  --shadow: rgba(58, 48, 37, 0.12);
-  --error: #ce0000;          /* DADS red-900（semantic error-2） */
-  --ok: #197a4b;             /* DADS green-800（semantic success-2） */
-  --focus: #ffd43d;          /* DADS yellow-300 */
-  --focus-ring: #000;        /* DADS: 黒 4px の輪＋黄 2px */
-  --font-ui: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  /* 字の大きさ（DADS: 本文と操作は 16px 以上、補足は 14px まで、14px 未満は使わない） */
-  --fs-s: 0.875rem;
-  --fs-m: 1rem;
-  --fs-l: 1.25rem;           /* 見出し（隣の段との比 1.25 以上: impeccable typeset） */
-  --fs-xl: 1.625rem;         /* ページの題 */
-  --lh-body: 1.7;            /* DADS の本文の行間 170% */
-  --lh-tight: 1.4;           /* 見出し */
-  /* 余白（4px を基準。DADS の spacing） */
-  --sp-1: 0.25rem;
-  --sp-2: 0.5rem;
-  --sp-3: 0.75rem;
-  --sp-4: 1rem;
-  --sp-6: 1.5rem;
-  --sp-8: 2rem;
-  --radius: 8px;
-  --tap: 44px;               /* 押せる物の高さの下限（DADS・SCREEN 5 章） */
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1814;
-    --bg-2: #25201a;
-    --card: #2b251e;
-    --text: #ece4d6;
-    --muted: #b9ab96;
-    --accent: #e0a066;
-    --accent-soft: #3a2e22;
-    --border: #4a3f33;
-    --input-border: #8c7d68;
-    --shadow: rgba(0, 0, 0, 0.4);
-    --error: #ff8a7a;
-    --ok: #6fcf97;
-    --focus-ring: #ffd43d;   /* 暗い地では黄の輪＋黒の縁 */
-    --focus: #000;
-  }
-}
+/* yorozu-common:begin v2 — サイト共通の土台と皮。正本は youheioonuki.github.io の tools/common/v2/base.css と skin.css（yorozu-plans DESIGN.md）。
+   この begin〜end の間は手で直さない（tools/sync-common.mjs で全ツールに配る。ツール固有の上書きは end の後に書く） */
+/* yorozu-common v2 土台の層（yorozu-plans ROADMAP 7.98 D369、DESIGN.md）。すべてのページ（見せる・遊ぶ・世界を持つページも）に当てる。
+   見た目（色・字・面）は持たない: リセット、押せる高さ、フォーカスの輪、入力の字の大きさ、読み上げの隠し字、動きを減らす設定、印刷で広告を出さない。
+   色の値は各ページか共通の皮（skin.css）が --focus-ring・--focus・--muted・--error を決める。無ければ下の既定
+   出どころ（v1 から引き継ぎ。2026-10-03 確認、yorozu-plans 企画書 59）: デジタル庁デザインシステム https://design.digital.go.jp/dads/ のコンテンツを加工して作成
+   （フォーカスの輪・字の大きさの下限・入力欄のエラー表示。値は @digital-go-jp/design-tokens 2.0.1、MIT, (c) 2023 デジタル庁）。
+   GOV.UK Frontend 6.5.1（MIT, (c) Crown copyright）の考え方: visually-hidden、エラーの文の前に読み上げ用の語 */
+:root { --tap: 44px; --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem; --sp-6: 1.5rem; --sp-8: 2rem; --fs-s: 0.875rem; --fs-m: 1rem; --fs-l: 1.25rem; --fs-xl: 1.625rem; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-body { font-family: var(--font-ui); background: var(--bg); color: var(--text); line-height: var(--lh-body); }
-/* リンクは色と下線の両方（DADS リンクテキスト）。ホバーで下線を太く */
-a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-@media (hover: hover) { a:hover { text-decoration-thickness: 3px; } }
-/* フォーカスの輪（DADS）。:where で詳しさを 0 にして、ツールの規則で上書きできるようにする */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 4px solid var(--focus-ring); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus);
+  outline: 4px solid var(--focus-ring, #000); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus, #ffd43d);
 }
+@media (forced-colors: active) { :where(a, button, input, select, textarea, summary):focus-visible { outline-color: Highlight; } }
 :where(input, select, textarea, button) { font: inherit; color: inherit; }
-/* 入力欄の例（placeholder）も 4.5:1。ブラウザ既定の灰色は和紙の地で 4.3:1 */
-:where(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
-/* 入力欄の字は 16px 以上（iPhone で拡大されない・DADS） */
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { font-size: max(1rem, 16px); }
-/* エラー（DADS: 枠を赤に、文の頭に「＊」。GOV.UK: 読み上げには「エラー:」を先に）。
-   使い方: <p class="field-error" id="x-err"><span class="visually-hidden">エラー:</span>＊ 0 以上の数を入れてください</p> と aria-describedby */
-[aria-invalid="true"] { border-color: var(--error) !important; }
-.field-error { color: var(--error); font-weight: 700; margin-top: var(--sp-1); }
-/* 画面には出さず、読み上げだけ（GOV.UK govuk-visually-hidden） */
+:where(button, summary, [role="button"]) { min-height: var(--tap); }
+[aria-invalid="true"] { border-color: var(--error, #ce0000) !important; }
+.field-error { color: var(--error, #ce0000); font-weight: 700; margin-top: var(--sp-1); }
 .visually-hidden {
   position: absolute !important; width: 1px !important; height: 1px !important; margin: 0 !important; padding: 0 !important;
   overflow: hidden !important; clip-path: inset(50%) !important; white-space: nowrap !important; border: 0 !important;
 }
-@media (forced-colors: active) { :where(a, button, input, select, textarea, summary):focus-visible { outline-color: Highlight; } }
-/* 読む行の長さ: 1 行 40 字前後まで（REVIEW C9 line-length）。画面の幅いっぱいに伸びる見出し帯の説明文に */
-.app-header > p { max-width: 40em; margin-left: auto; margin-right: auto; }
-/* 印刷では広告を出さない（SCREEN 4 章。全ツール共通） */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 @media print { ins.adsbygoogle, .google-auto-placed, iframe[id^="aswift"], iframe[id^="google_ads"] { display: none !important; } }
+/* yorozu-common v2 共通の皮（B「静かな道具」。yorozu-plans ROADMAP 7.94〜7.99 D364・D366・D369、正典は DESIGN.md）。
+   当てるのは計算・制度・道具・読み物・案内（docs/content-classes.csv の「皮」が「共通」）。base.css の後、ページ自身の CSS の前に読む（ページが上書きできる）。
+   土台だけのページは <html data-skin="base">（CSV の「皮」から機械で付ける）で、この皮はすべて外れる。同じ CSS を共通と土台のページが使っていても出し分けられる。
+   どの規則も :where() で詳細度を上げない（トークンは 0、要素の規則は要素 1 つ分のまま）。影・装飾・2 色以上の強調・端末依存の明朝は使わない */
+:where(html:not([data-skin="base"])) {
+  color-scheme: light dark;
+  --bg: #eef0f2; --bg-2: #e2e6ea; --card: #fbfcfd; --text: #1d2125; --muted: #4c565f;
+  --accent: #0e5a6b; --accent-soft: #dcecef; --on-accent: #ffffff;
+  --border: #c5ccd3; --input-border: #6b7782;
+  --error: #ce0000; --ok: #197a4b; --focus: #ffd43d; --focus-ring: #000;
+  --font-ui: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --lh-body: 1.7; --lh-tight: 1.4; --radius: 6px; --line-input: 2px;
+}
+@media (prefers-color-scheme: dark) {
+  :where(html:not([data-skin="base"])) {
+    --bg: #15191d; --bg-2: #1c2227; --card: #1a1f24; --text: #e8ecef; --muted: #a8b3bc;
+    --accent: #6fc3d4; --accent-soft: #14323a; --on-accent: #0b1a1e;
+    --border: #2f373e; --input-border: #7a8792; --error: #ff8a7a; --ok: #6fcf97; --focus: #000; --focus-ring: #ffd43d;
+  }
+}
+:where(html:not([data-skin="base"])) body { font-family: var(--font-ui); background: var(--bg); color: var(--text); line-height: var(--lh-body); font-variant-numeric: tabular-nums; }
+:where(html:not([data-skin="base"])) h1 { font-size: var(--fs-xl); font-weight: 800; line-height: var(--lh-tight); }
+:where(html:not([data-skin="base"])) h2 { font-size: var(--fs-l); font-weight: 800; line-height: var(--lh-tight); }
+:where(html:not([data-skin="base"])) h3 { font-size: var(--fs-m); font-weight: 800; }
+:where(html:not([data-skin="base"])) a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+@media (hover: hover) { :where(html:not([data-skin="base"])) a:hover { text-decoration-thickness: 3px; } }
+:where(html:not([data-skin="base"])) :where(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+/* 部品: 入力の箱 */
+:where(html:not([data-skin="base"])) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { border: var(--line-input) solid var(--input-border); border-radius: var(--radius); background: var(--card); min-height: var(--tap); padding: var(--sp-1) var(--sp-3); }
+:where(html:not([data-skin="base"])) :where(input, select, textarea):focus { border-color: var(--text); }
+/* 部品: ボタン（主は塗り、副は線） */
+:where(html:not([data-skin="base"])) :where(button, .btn) { border: 1px solid var(--input-border); border-radius: var(--radius); background: var(--card); color: var(--text); font-weight: 700; padding: 0 var(--sp-4); cursor: pointer; }
+:where(html:not([data-skin="base"])) :where(button[type="submit"], .btn-primary) { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* 部品: チップ・面・折りたたみ（開閉の印 ▶ を残すため list-item のまま、高さは上下の余白と土台の min-height で）・結果の数字・注意の帯・固定バー */
+:where(html:not([data-skin="base"])) :where(.chip) { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-3); border: 1px solid var(--input-border); border-radius: var(--radius); color: var(--text); text-decoration: none; font-weight: 700; }
+:where(html:not([data-skin="base"])) :where(.card) { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); }
+:where(html:not([data-skin="base"])) :where(details) > summary { padding-block: var(--sp-2); cursor: pointer; font-weight: 700; }
+:where(html:not([data-skin="base"])) :where(.result-num, .money, output) { font-size: var(--fs-xl); font-weight: 800; }
+:where(html:not([data-skin="base"])) :where(.notice, [data-keep]) { border-left: 4px solid var(--text); background: var(--bg-2); padding: var(--sp-2) var(--sp-3); }
+:where(html:not([data-skin="base"])) :where(.fixed-bar) { position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: var(--sp-2) var(--sp-4); }
 /* yorozu-common:end */
+/* yorozu-v1-carry — v1 の共通（和紙の色、2026-09-23〜10-17）から、このファイルのページが使っていた見た目をそのまま持ち込んだ（yorozu-plans ROADMAP 7.99、K192 段 3 の 0）。
+   段 3 の 2〜4 でこのページを v2 のトークンに載せ替えるときに、yorozu-v1-carry:end まで消す */
+:root {
+  color-scheme: light dark;
+  --bg: #f0ebe0; --bg-2: #e6dfd0; --card: #faf6ee; --text: #3a3025; --muted: #6e604f;
+  --accent: #8b4513; --accent-soft: #f3e6d8; --border: #cfc0a0; --input-border: #857561; --shadow: rgba(58, 48, 37, 0.12);
+  --error: #ce0000; --ok: #197a4b; --focus: #ffd43d; --focus-ring: #000;
+  --font-ui: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --lh-body: 1.7; --lh-tight: 1.4; --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1814; --bg-2: #25201a; --card: #2b251e; --text: #ece4d6; --muted: #b9ab96;
+    --accent: #e0a066; --accent-soft: #3a2e22; --border: #4a3f33; --input-border: #8c7d68; --shadow: rgba(0, 0, 0, 0.4);
+    --error: #ff8a7a; --ok: #6fcf97; --focus-ring: #ffd43d; --focus: #000;
+  }
+}
+body { font-family: var(--font-ui); background: var(--bg); color: var(--text); line-height: var(--lh-body); }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+@media (hover: hover) { a:hover { text-decoration-thickness: 3px; } }
+:where(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+.app-header > p { max-width: 40em; margin-left: auto; margin-right: auto; }
+/* yorozu-v1-carry:end */
 
 /* ヘッダー */
 .app-header {
