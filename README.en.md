@@ -454,7 +454,7 @@ Groups such as `Domain Users` / `Domain Computers` have an empty `member` attrib
 
 ## Detailed reference
 
-→ **[ADSearch_Reference.html](ADSearch_Reference.html)** (in Japanese)
+→ **[Reference manual](https://yorozu-craft.com/ADSearch/reference.html)** (in Japanese)
 
 ---
 

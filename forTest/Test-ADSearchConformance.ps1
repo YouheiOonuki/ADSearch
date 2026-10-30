@@ -112,7 +112,7 @@ Add-ConformanceRowConditional 'Export parity (declared functions resolve)' `
 # ------------------------------------------------------------------
 # 3. Doc parity
 # ------------------------------------------------------------------
-$refPath = Join-Path $repoRoot 'ADSearch_Reference.html'
+$refPath = Join-Path $repoRoot 'docs\reference.html'
 if (Test-Path -LiteralPath $refPath) {
     $refText = Get-Content -LiteralPath $refPath -Raw
     $idMatches = [regex]::Matches($refText, 'id="((?:Get|Search|Invoke)-[A-Za-z]+)"')
