@@ -21,6 +21,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 :where(input, select, textarea, button) { font: inherit; color: inherit; }
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { font-size: max(1rem, 16px); }
 :where(button, summary, [role="button"]) { min-height: var(--tap); }
+/* 1 つだけで置くリンク（nav の並び、使い方から道具へ戻るカード、言語の切り替え、パンくず）も押せる高さに。文中のリンクは対象外（WCAG 2.5.8。K192 の全巡回） */
+:where(nav li > a, p.card > a:only-child, .lang-switch a, .crumb a) { display: inline-flex; align-items: center; min-height: var(--tap); }
 [aria-invalid="true"] { border-color: var(--error, #ce0000) !important; }
 .field-error { color: var(--error, #ce0000); font-weight: 700; margin-top: var(--sp-1); }
 .visually-hidden {
