@@ -48,7 +48,8 @@
   /* 狭い画面ではサイドバーを本文の上に置き、横スクロールを防ぐ */
   @media (max-width: 768px) {
     body { display: block; }
-    nav { position: static; width: auto; min-width: 0; height: auto; padding: var(--sp-3) 0; border-right: 0; border-bottom: 1px solid var(--border); }
+    /* スマホは目次を本文の上に置くが、130 行あるので高さを 40vh で止めて中で送る（本文の先頭を 1 画面目に。SCREEN 2 章の読み物） */
+    nav { position: static; width: auto; min-width: 0; height: auto; max-height: 40vh; overflow-y: auto; padding: var(--sp-3) 0; border-right: 0; border-bottom: 1px solid var(--border); }
     main { max-width: none; padding: var(--sp-6) var(--sp-4); }
     td, th { overflow-wrap: anywhere; }
     code { overflow-wrap: anywhere; }
