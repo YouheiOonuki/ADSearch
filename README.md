@@ -452,7 +452,7 @@ $members | ForEach-Object { Get-ADUser $_.SamAccountName -Server dc01 }
 
 ## 詳細リファレンス
 
-→ **[ADSearch_Reference.html](ADSearch_Reference.html)**
+→ **[リファレンスマニュアル](https://yorozu-craft.com/ADSearch/reference.html)**
 
 ---
 
