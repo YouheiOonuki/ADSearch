@@ -6,175 +6,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ADSearch リファレンスマニュアル</title>
+<meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15191d" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="./style.css">
 <style>
-  :root {
-    --bg: #fff;
-    --fg: #1a1a1a;
-    --muted: #6b7280;
-    --border: #e5e7eb;
-    --code-bg: #f3f4f6;
-    --accent: #2563eb;
-    --accent-light: #eff6ff;
-    --warn-bg: #fffbeb;
-    --warn-border: #f59e0b;
-    --note-bg: #f0fdf4;
-    --note-border: #22c55e;
-    --section-head: #1e3a5f;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: "Segoe UI", "Meiryo UI", Meiryo, sans-serif;
-    font-size: 14px;
-    line-height: 1.7;
-    color: var(--fg);
-    background: var(--bg);
-    display: flex;
-  }
-  /* サイドバー */
+  /* 色・字・余白・角は共通の皮（style.css）のトークン。ここは配置と表の形だけ */
+  body { font-size: var(--fs-m); display: flex; flex-wrap: wrap; }
+  /* サイドバー（目次） */
   nav {
-    width: 240px;
-    min-width: 240px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    background: #1e3a5f;
-    color: #c8d8ed;
-    padding: 16px 0;
-    font-size: 13px;
+    width: 240px; min-width: 240px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    background: var(--bg-2); border-right: 1px solid var(--border); padding: var(--sp-4) 0; font-size: var(--fs-s);
   }
-  nav .nav-title {
-    color: #fff;
-    font-size: 15px;
-    font-weight: 700;
-    padding: 0 16px 12px;
-    border-bottom: 1px solid #2d5282;
-    margin-bottom: 8px;
-  }
-  nav .nav-group {
-    padding: 8px 16px 2px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    color: #7fa8cc;
-  }
-  nav a {
-    display: block;
-    padding: 4px 16px 4px 24px;
-    color: #c8d8ed;
-    text-decoration: none;
-  }
-  nav a:hover { background: #2d5282; color: #fff; }
-  /* メインコンテンツ */
-  main {
-    flex: 1;
-    max-width: 900px;
-    padding: 40px 48px;
-    overflow-x: auto;
-  }
-  h1 { font-size: 28px; color: var(--section-head); margin-bottom: 8px; }
-  h2 { font-size: 20px; color: var(--section-head); margin: 48px 0 12px;
-       padding-bottom: 6px; border-bottom: 2px solid var(--accent); }
-  h3 { font-size: 15px; font-weight: 700; color: var(--section-head);
-       margin: 20px 0 8px; }
-  p { margin-bottom: 10px; }
-  a { color: var(--accent); }
-  ul, ol { margin: 8px 0 10px 22px; }
-  li { margin-bottom: 4px; }
-  code {
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 13px;
-    background: var(--code-bg);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 1px 5px;
-  }
-  pre {
-    background: #1e1e1e;
-    color: #d4d4d4;
-    border-radius: 6px;
-    padding: 16px 18px;
-    overflow-x: auto;
-    margin: 10px 0 16px;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 13px;
-    line-height: 1.6;
-  }
-  pre code { background: none; border: none; padding: 0; color: inherit; }
-  /* パラメータテーブル */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 10px 0 20px;
-    font-size: 13px;
-  }
-  th {
-    background: var(--section-head);
-    color: #fff;
-    padding: 7px 12px;
-    text-align: left;
-    font-weight: 600;
-  }
-  td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  tr:nth-child(even) td { background: #f9fafb; }
-  .required { color: #dc2626; font-weight: 700; }
-  /* 注記ボックス */
-  .note {
-    background: var(--note-bg);
-    border-left: 4px solid var(--note-border);
-    padding: 10px 14px;
-    margin: 10px 0 16px;
-    border-radius: 0 4px 4px 0;
-  }
-  .warn {
-    background: var(--warn-bg);
-    border-left: 4px solid var(--warn-border);
-    padding: 10px 14px;
-    margin: 10px 0 16px;
-    border-radius: 0 4px 4px 0;
-  }
-  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-  .badge {
-    display: inline-block;
-    font-size: 11px;
-    padding: 1px 7px;
-    border-radius: 12px;
-    margin-left: 6px;
-    vertical-align: middle;
-  }
-  .badge-new { background: #dcfce7; color: #166534; }
-  .badge-limit { background: #fee2e2; color: #991b1b; }
-  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
-  /* body 直下に置かれた段落（公開ページの戻りリンク等）はサイドバーの上に 1 行で表示 */
-  body { flex-wrap: wrap; }
-  body > p:first-child { flex: 0 0 100%; }
-  /* 狭い画面（スマートフォン等）ではサイドバーを本文の上に置き、横スクロールを防ぐ */
+  nav .nav-title { font-weight: 800; padding: 0 var(--sp-4) var(--sp-3); border-bottom: 1px solid var(--border); margin-bottom: var(--sp-2); }
+  nav .nav-group { padding: var(--sp-2) var(--sp-4) var(--sp-1); font-weight: 700; color: var(--muted); }
+  nav a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-4) 0 var(--sp-6); text-decoration: none; }
+  nav a:hover { background: var(--accent-soft); }
+  /* 本文: 面は 900px、文の行は 40 字 */
+  main { flex: 1; max-width: 900px; padding: var(--sp-8) var(--sp-6); overflow-x: auto; }
+  main :where(p, ul, ol) { max-width: 40em; }
+  h1 { margin-bottom: var(--sp-2); }
+  h2 { margin: var(--sp-8) 0 var(--sp-3); padding-bottom: var(--sp-1); border-bottom: 1px solid var(--border); }
+  h3 { margin: var(--sp-4) 0 var(--sp-2); }
+  p { margin-bottom: var(--sp-3); }
+  ul, ol { margin: var(--sp-2) 0 var(--sp-3) var(--sp-6); }
+  li { margin-bottom: var(--sp-1); }
+  code { font-family: Consolas, "Courier New", monospace; font-size: var(--fs-s); background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 var(--sp-1); }
+  pre { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); overflow-x: auto; margin: var(--sp-3) 0; line-height: 1.6; font-size: var(--fs-s); }
+  pre code { background: none; border: none; padding: 0; }
+  /* パラメータの表 */
+  table { width: 100%; border-collapse: collapse; margin: var(--sp-3) 0 var(--sp-6); font-size: var(--fs-s); }
+  th { background: var(--bg-2); padding: var(--sp-2) var(--sp-3); text-align: left; font-weight: 800; border-bottom: 2px solid var(--text); }
+  td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+  .required { color: var(--error); font-weight: 700; }
+  /* 注記（皮の注意の帯と同じ形。note と warn の違いは文で書いてある） */
+  .note, .warn { border-left: 4px solid var(--text); background: var(--bg-2); padding: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0 var(--sp-4); }
+  .subtitle { color: var(--muted); font-size: var(--fs-s); margin-bottom: var(--sp-6); }
+  .badge { display: inline-block; font-size: var(--fs-s); padding: 0 var(--sp-2); border: 1px solid var(--input-border); border-radius: var(--radius); margin-left: var(--sp-2); vertical-align: middle; font-weight: 700; }
+  hr { border: none; border-top: 1px solid var(--border); margin: var(--sp-8) 0; }
+  .back { flex: 0 0 100%; padding: var(--sp-2) var(--sp-3); background: var(--bg-2); font-size: var(--fs-s); }
+  .colophon { color: var(--muted); font-size: var(--fs-s); text-align: center; margin: var(--sp-8) auto 0; }
+  /* 狭い画面ではサイドバーを本文の上に置き、横スクロールを防ぐ */
   @media (max-width: 768px) {
     body { display: block; }
-    nav {
-      position: static;
-      width: auto;
-      min-width: 0;
-      height: auto;
-      padding: 12px 0;
-    }
-    nav a { display: inline-block; padding: 2px 8px; }
-    nav .nav-group { padding: 8px 12px 2px; }
-    main { max-width: none; padding: 24px 16px; }
+    nav { position: static; width: auto; min-width: 0; height: auto; padding: var(--sp-3) 0; border-right: 0; border-bottom: 1px solid var(--border); }
+    main { max-width: none; padding: var(--sp-6) var(--sp-4); }
     td, th { overflow-wrap: anywhere; }
     code { overflow-wrap: anywhere; }
     pre code { overflow-wrap: normal; }
   }
   @media print {
     nav { display: none; }
-    main { max-width: 100%; padding: 20px; }
+    main { max-width: 100%; padding: var(--sp-4); }
   }
 </style>
   <link rel="manifest" href="/manifest.webmanifest">
 </head>
 <body>
-<p style="margin:0;padding:8px 12px;background:#f3e6d8;font-size:14px"><a href="./">← ADSearch の紹介ページへ</a>（yorozu-craft）</p>
+<p class="back"><a href="./">← ADSearch の紹介ページへ</a>（yorozu-craft）</p>
 
 <nav>
   <div class="nav-title">ADSearch</div>
@@ -1443,7 +1331,7 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 </ul>
 
 <hr>
-<p style="color:#6b7280; font-size:12px; text-align:center; margin-top:32px;">
+<p class="colophon">
 ADSearch v1.4.1 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 

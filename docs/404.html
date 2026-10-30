@@ -5,29 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ページが見つかりません｜yorozu-craft</title>
   <meta name="robots" content="noindex">
+  <!-- 生成物（youheioonuki.github.io の tools/build-404.mjs）。手で直さない。色と字の値は tools/common/v2/skin.css・base.css から -->
+  <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15191d" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <style>
+    :root { color-scheme: light dark; --bg: #eef0f2; --text: #1d2125; --accent: #0e5a6b; --on-accent: #ffffff; --focus: #ffd43d; --focus-ring: #000; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #15191d; --text: #e8ecef; --accent: #6fc3d4; --on-accent: #0b1a1e; --focus: #000; --focus-ring: #ffd43d; } }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-      background: #f0ebe0; color: #3a3025; margin: 0;
+      background: var(--bg); color: var(--text); line-height: 1.4;
       min-height: 100vh; display: flex; align-items: center; justify-content: center;
       text-align: center; padding: 1rem;
     }
-    h1 { color: #8b4513; font-size: 1.4rem; margin-bottom: 0.6rem; }
-    p { color: #7a6b5a; margin-bottom: 1.2rem; }
+    h1 { font-size: 1.625rem; font-weight: 800; margin-bottom: 1.5rem; }
     a {
-      display: inline-block; padding: 0.5rem 1.2rem; border-radius: 6px;
-      background: #8b4513; color: #faf6ee; text-decoration: none; font-weight: 600;
+      display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border-radius: 6px;
+      background: var(--accent); color: var(--on-accent); text-decoration: none; font-weight: 700;
     }
+    a:focus-visible { outline: 4px solid var(--focus-ring, #000); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus, #ffd43d); }
   </style>
 </head>
 <body>
   <main>
     <h1>ページが見つかりません</h1>
-    <p>URL が変わったか、ページが削除された可能性があります。</p>
     <!-- 404 はどの階層でも表示されるので、トップへのリンクは絶対パスにする -->
     <a href="/">yorozu-craft トップへ</a>
   </main>
