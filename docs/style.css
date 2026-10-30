@@ -62,6 +62,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* 部品: ボタン（主は塗り、副は線） */
 :where(html:not([data-skin="base"])) :where(button, .btn) { border: 1px solid var(--input-border); border-radius: var(--radius); background: var(--card); color: var(--text); font-weight: 700; padding: 0 var(--sp-4); cursor: pointer; }
 :where(html:not([data-skin="base"])) :where(button[type="submit"], .btn-primary) { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* <a> のボタンは a { color } に負けないよう、詳細度を 1 段だけ上げる（D416。主は副の後に書いて勝たせる） */
+:where(html:not([data-skin="base"])) a.btn { color: var(--text); }
+:where(html:not([data-skin="base"])) a.btn-primary { color: var(--on-accent); }
 /* 部品: チップ・面・折りたたみ（開閉の印 ▶ を残すため list-item のまま、高さは上下の余白と土台の min-height で）・結果の数字・注意の帯・固定バー */
 :where(html:not([data-skin="base"])) :where(.chip) { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-3); border: 1px solid var(--input-border); border-radius: var(--radius); color: var(--text); text-decoration: none; font-weight: 700; }
 :where(html:not([data-skin="base"])) :where(.card) { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); }
