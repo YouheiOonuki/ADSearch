@@ -95,14 +95,14 @@
         <li>Download the ZIP with the button above, unzip it and put the <code>ADSearch</code> folder on your machine or a file share</li>
         <li>Load it in PowerShell</li>
       </ol>
-<pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1</code></pre>
+<pre tabindex="0"><code>Import-Module C:\tools\ADSearch\ADSearch.psd1</code></pre>
       <p>If it will not load, see the <a href="./guide.html">usage page</a> and its FAQ.</p>
       <details class="more">
         <summary>File share and the execution policy</summary>
         <p>From a file share:</p>
-<pre><code>Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
+<pre tabindex="0"><code>Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
         <p>If the execution policy (RemoteSigned etc.) blocks it, use the bundled <code>Import-ADSearch.ps1</code>.</p>
-<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+<pre tabindex="0"><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
 Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
         <p>For downloaded files, unblocking them first with <code>Get-ChildItem -Recurse | Unblock-File</code> lets them load normally.</p>
       </details>
@@ -110,7 +110,7 @@ Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
 
     <section class="card content" aria-labelledby="h-use">
       <h2 id="h-use">Examples and commands (42)</h2>
-<pre><code># Get a user
+<pre tabindex="0"><code># Get a user
 Get-ADUser -Identity jsmith -Server dc01.corp.local
 
 # Group members, recursively
@@ -118,7 +118,7 @@ Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local</code>
       <p class="small">Domain and user names in the examples are fictitious.</p>
       <details class="more">
         <summary>More examples</summary>
-<pre><code># Filter
+<pre tabindex="0"><code># Filter
 Get-ADUser -Filter "DisplayName -like 'Smith*'" -Server dc01.corp.local
 
 # Enabled accounts that are locked out

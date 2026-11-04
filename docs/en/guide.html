@@ -95,11 +95,11 @@
         <li>In PowerShell, run <code>Import-Module</code> with <code>ADSearch.psd1</code></li>
         <li>Run <code>Invoke-ADSearchSelfTest</code> to check that it loaded and the DC is reachable</li>
       </ol>
-<pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1
+<pre tabindex="0"><code>Import-Module C:\tools\ADSearch\ADSearch.psd1
 Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
       <p class="small">The domain name in the example is fictitious.</p>
       <p>If the execution policy (RemoteSigned etc.) blocks it, use the bundled <code>Import-ADSearch.ps1</code>.</p>
-<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+<pre tabindex="0"><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
 Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
     </section>
 

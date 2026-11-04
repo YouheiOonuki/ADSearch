@@ -82,11 +82,11 @@
         <li>PowerShell で <code>Import-Module</code> に <code>ADSearch.psd1</code> を指定します</li>
         <li><code>Invoke-ADSearchSelfTest</code> で、読み込めたかと DC に届くかを確かめます</li>
       </ol>
-<pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1
+<pre tabindex="0"><code>Import-Module C:\tools\ADSearch\ADSearch.psd1
 Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
       <p class="small">例のドメイン名は架空のものです。</p>
       <p>実行ポリシー（RemoteSigned など）で読み込めない場合は、同梱の <code>Import-ADSearch.ps1</code> を使います。</p>
-<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+<pre tabindex="0"><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
 Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
     </section>
 
