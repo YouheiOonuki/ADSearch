@@ -110,20 +110,20 @@
         <li>上のボタンで ZIP をダウンロードして展開し、<code>ADSearch</code> フォルダごと手元かファイル共有に置きます</li>
         <li>PowerShell で読み込みます</li>
       </ol>
-<pre><code># モジュールとして（推奨）
+<pre tabindex="0"><code># モジュールとして（推奨）
 Import-Module C:\tools\ADSearch\ADSearch.psd1
 
 # ファイル共有から
 Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
       <p>実行ポリシー（RemoteSigned など）で読み込めない場合は、同梱の <code>Import-ADSearch.ps1</code> を使います。</p>
-<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+<pre tabindex="0"><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
 Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
       <p class="small">ダウンロードしたファイルは、先に <code>Get-ChildItem -Recurse | Unblock-File</code> でブロックを解除すると通常どおり読み込めます。</p>
     </section>
 
     <section class="card content" aria-labelledby="h-use">
       <h2 id="h-use">使い方の例</h2>
-<pre><code># ユーザーを取得
+<pre tabindex="0"><code># ユーザーを取得
 Get-ADUser -Identity yamada -Server dc01.corp.local
 
 # 条件で絞り込み
