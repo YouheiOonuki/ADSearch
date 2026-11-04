@@ -37,38 +37,6 @@
     "codeRepository": "https://github.com/YouheiOonuki/ADSearch"
   }
   </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Does it ever change anything in AD?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. Every exported command only gets, searches or runs a self-test. The scripts in the forTest folder that create test data are for test environments only; do not run them in production."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does it give the same results as RSAT's Get-ADUser?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "The main parameters and output properties follow RSAT. The differences are listed under RSAT-compatible properties and Deliberate omissions in the README."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "The execution policy stops it from loading.",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Use the bundled Import-ADSearch.ps1. It reads the files as text and loads them as script blocks, so the file execution policy does not apply."
-        }
-      }
-    ]
-  }
-  </script>
 
   <!-- Google AdSense（サイト所有確認 + 広告配信スクリプト） -->
   <meta name="google-adsense-account" content="ca-pub-5375267956079717">
@@ -128,6 +96,7 @@
         <li>Load it in PowerShell</li>
       </ol>
 <pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1</code></pre>
+      <p>If it will not load, see the <a href="./guide.html">usage page</a> and its FAQ.</p>
       <details class="more">
         <summary>File share and the execution policy</summary>
         <p>From a file share:</p>
@@ -177,35 +146,8 @@ Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
       <p>The Exchange commands read what Exchange stores in AD; they don't connect to an Exchange server. Parameters and output are in the <a href="../reference.html" hreflang="ja">reference manual</a> (Japanese).</p>
     </section>
 
-    <section class="card content" id="faq" aria-labelledby="h-faq">
-      <h2 id="h-faq">FAQ</h2>
-      <dl class="faq">
-        <dt>Does it ever change anything in AD?</dt>
-        <dd>No. Every exported command only gets, searches or runs a self-test. The scripts in the forTest folder that create test data are for test environments only; do not run them in production.</dd>
-        <dt>Does it give the same results as RSAT&#x27;s Get-ADUser?</dt>
-        <dd>The main parameters and output properties follow RSAT. The differences are listed under RSAT-compatible properties and Deliberate omissions in the README.</dd>
-        <dt>The execution policy stops it from loading.</dt>
-        <dd>Use the bundled Import-ADSearch.ps1. It reads the files as text and loads them as script blocks, so the file execution policy does not apply.</dd>
-      </dl>
-    </section>
-
-    <section class="card content" id="notes" aria-labelledby="h-notes">
-      <h2 id="h-notes">Notes</h2>
-      <ul>
-        <li>Before using it on a work machine, check your employer's rules (on bringing in software and on querying the directory)</li>
-        <li>Running many searches in quick succession puts load on the DC. Narrow the scope with <code>-Filter</code> and <code>-SearchBase</code></li>
-        <li>The module runs entirely on your machine and sends nothing to this site</li>
-      </ul>
-      <p><a href="/post/?from=/ADSearch/en/">Feedback and bug reports</a>: the page is in Japanese, but you can write in English.</p>
-      <p>The site-wide <a href="../../en/about.html">about page and disclaimer</a> and <a href="../../en/privacy-policy.html">privacy policy</a> apply to all tools.</p>
+    <section class="card content" aria-label="Translation note">
       <p class="translation-note">This is an English translation of the <a href="../" hreflang="ja">Japanese page</a>. If the two differ, the Japanese version prevails.</p>
-      <details class="more" id="changelog">
-        <summary>Changes</summary>
-      <ul>
-        <li><time datetime="2026-09-24">24 September 2026</time> Version 1.4.1: fixed <code>'$true'</code> in <code>-Filter</code>, <code>Get-ADComputer PC001</code> (without <code>$</code>), and <code>-Identity</code> by name for trusts, sites and Exchange configuration. Added a test that runs without AD</li>
-        <li><time datetime="2026-09-24">24 September 2026</time> Released (version 1.4.0)</li>
-      </ul>
-      </details>
     </section>
 
     <section class="card content" aria-label="Other tools">
@@ -219,6 +161,7 @@ Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
       <ul>
         <li><a href="../../en/">yorozu-craft</a></li>
         <li><a href="./" aria-current="page">ADSearch</a></li>
+        <li><a href="./guide.html">Usage and FAQ</a></li>
         <li><a href="../reference.html" hreflang="ja">Reference (Japanese)</a></li>
         <li><a href="../../en/about.html">About</a></li>
         <li><a href="../../en/privacy-policy.html">Privacy policy</a></li>

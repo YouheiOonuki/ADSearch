@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage and FAQ | ADSearch | yorozu-craft</title>
+  <meta name="description" content="How to load ADSearch, what to do when the execution policy blocks it, and answers about running without RSAT and read-only access.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://yorozu-craft.com/ADSearch/en/guide.html">
+  <link rel="alternate" hreflang="ja" href="https://yorozu-craft.com/ADSearch/guide.html">
+  <link rel="alternate" hreflang="en" href="https://yorozu-craft.com/ADSearch/en/guide.html">
+  <link rel="alternate" hreflang="x-default" href="https://yorozu-craft.com/ADSearch/guide.html">
+
+  <meta property="og:title" content="ADSearch usage and FAQ">
+  <meta property="og:description" content="How to load ADSearch, what to do when the execution policy blocks it, and the FAQ.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://yorozu-craft.com/ADSearch/en/guide.html">
+  <meta property="og:site_name" content="yorozu-craft">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:locale:alternate" content="ja_JP">
+  <meta property="og:image" content="https://yorozu-craft.com/ADSearch/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does it work without RSAT (the ActiveDirectory module)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. It uses only .NET's System.DirectoryServices (ADSI/LDAP), so RSAT is not needed. It runs as an ordinary domain user on a domain-joined Windows machine."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it ever change anything in AD?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Every exported command only gets, searches or runs a self-test. The scripts in the forTest folder that create test data are for test environments only; do not run them in production."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it give the same results as RSAT's Get-ADUser?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The main parameters and output properties follow RSAT. -Identity accepts a DN, ObjectGUID, SID or sAMAccountName, and throws if nothing is found, as RSAT does. Differences are listed in the README and the reference."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "The execution policy stops it from loading.",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use the bundled Import-ADSearch.ps1. It reads the files as text and loads them as script blocks, so the file execution policy does not apply. If you can copy the files locally, running Unblock-File on them first also works."
+      }
+    }
+  ]
+}
+  </script>
+
+  <!-- Google AdSense（サイト所有確認 + 広告配信スクリプト） -->
+  <meta name="google-adsense-account" content="ca-pub-5375267956079717">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5375267956079717"
+     crossorigin="anonymous"></script>
+
+  <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15191d" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>How to use ADSearch</h1>
+    <p class="subtitle">Loading, when it will not load, and FAQ</p>
+    <p class="lang-switch"><a href="../guide.html" hreflang="ja" lang="ja">日本語</a></p>
+  </header>
+
+  <main class="app-main">
+
+    <p class="card" style="text-align:center"><a href="./">▶ Download ADSearch</a></p>
+
+    <section class="card content" id="howto" aria-labelledby="h-howto">
+      <h2 id="h-howto">How to use ADSearch</h2>
+      <ol>
+        <li>Unzip the ZIP and put the <code>ADSearch</code> folder on your machine or a file share</li>
+        <li>In PowerShell, run <code>Import-Module</code> with <code>ADSearch.psd1</code></li>
+        <li>Run <code>Invoke-ADSearchSelfTest</code> to check that it loaded and the DC is reachable</li>
+      </ol>
+<pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1
+Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
+      <p class="small">The domain name in the example is fictitious.</p>
+      <p>If the execution policy (RemoteSigned etc.) blocks it, use the bundled <code>Import-ADSearch.ps1</code>.</p>
+<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
+    </section>
+
+    <section class="card content" id="faq" aria-labelledby="h-faq">
+      <h2 id="h-faq">FAQ</h2>
+      <dl class="faq">
+        <dt>Does it work without RSAT (the ActiveDirectory module)?</dt>
+        <dd>Yes. It uses only .NET's System.DirectoryServices (ADSI/LDAP), so RSAT is not needed. It runs as an ordinary domain user on a domain-joined Windows machine.</dd>
+        <dt>Does it ever change anything in AD?</dt>
+        <dd>No. Every exported command only gets, searches or runs a self-test. The scripts in the forTest folder that create test data are for test environments only; do not run them in production.</dd>
+        <dt>Does it give the same results as RSAT's Get-ADUser?</dt>
+        <dd>The main parameters and output properties follow RSAT. -Identity accepts a DN, ObjectGUID, SID or sAMAccountName, and throws if nothing is found, as RSAT does. Differences are listed in the README and the reference.</dd>
+        <dt>The execution policy stops it from loading.</dt>
+        <dd>Use the bundled Import-ADSearch.ps1. It reads the files as text and loads them as script blocks, so the file execution policy does not apply. If you can copy the files locally, running Unblock-File on them first also works.</dd>
+      </dl>
+    </section>
+
+    <section class="card content" id="notes" aria-labelledby="h-notes">
+      <h2 id="h-notes">Notes</h2>
+      <ul>
+        <li>Before using it on a work machine, check your employer's rules (on bringing in software and on querying the directory)</li>
+        <li>Running many searches in quick succession puts load on the DC. Narrow the scope with <code>-Filter</code> and <code>-SearchBase</code></li>
+        <li>The module runs entirely on your machine and sends nothing to this site</li>
+        <li>It is provided as is, with no warranty</li>
+      </ul>
+      <p><a href="/post/?from=/ADSearch/en/guide.html">Feedback and bug reports</a>: reports are used to fix things; replies are not sent. The form is in Japanese, but you can write in English.</p>
+      <p>The site-wide <a href="../../en/about.html">about page and disclaimer</a> and <a href="../../en/privacy-policy.html">privacy policy</a> apply to all tools.</p>
+    </section>
+
+    <section class="card content" aria-labelledby="h-log">
+      <h2 id="h-log">Changes</h2>
+      <ul>
+        <li><time datetime="2026-11-04">4 November 2026</time> Added this usage page (the FAQ, notes and changes moved here from the overview page)</li>
+        <li><time datetime="2026-09-24">24 September 2026</time> Version 1.4.1: fixed <code>'$true'</code> in <code>-Filter</code>, <code>Get-ADComputer PC001</code> (without <code>$</code>), and <code>-Identity</code> by name for trusts, sites and Exchange configuration. Added a test that runs without AD</li>
+        <li><time datetime="2026-09-24">24 September 2026</time> Released (version 1.4.0)</li>
+      </ul>
+    </section>
+
+    <section class="card content" aria-label="Translation note">
+      <p class="translation-note">This is an English translation of the <a href="../guide.html" hreflang="ja">Japanese page</a>. If the two differ, the Japanese version prevails.</p>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <nav class="footer-nav" aria-label="Footer">
+      <ul>
+        <li><a href="../../en/">yorozu-craft</a></li>
+        <li><a href="./">ADSearch</a></li>
+        <li><a href="./guide.html" aria-current="page">Usage and FAQ</a></li>
+        <li><a href="../reference.html" hreflang="ja">Reference (Japanese)</a></li>
+        <li><a href="../../en/about.html">About</a></li>
+        <li><a href="../../en/privacy-policy.html">Privacy policy</a></li>
+      </ul>
+    </nav>
+    <p>&copy; 2026 yorozu-craft. All rights reserved.</p>
+  </footer>
+
+  <!-- Cloudflare Web Analytics（Cookie を使わないアクセス解析） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b79bf821e1fd4b6683866d493b1de426"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
