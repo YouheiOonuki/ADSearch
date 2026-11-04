@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>使い方・よくある質問｜ADSearch｜yorozu-craft</title>
+  <meta name="description" content="ADSearch の使い方。ZIP の展開と読み込み、実行ポリシーで読み込めないときの方法、RSAT なしで動く理由、読み取り専用であることなど、よくある質問に答えます。">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://yorozu-craft.com/ADSearch/guide.html">
+  <link rel="alternate" hreflang="ja" href="https://yorozu-craft.com/ADSearch/guide.html">
+  <link rel="alternate" hreflang="en" href="https://yorozu-craft.com/ADSearch/en/guide.html">
+  <link rel="alternate" hreflang="x-default" href="https://yorozu-craft.com/ADSearch/guide.html">
+
+  <meta property="og:title" content="使い方・よくある質問｜ADSearch">
+  <meta property="og:description" content="ADSearch の使い方。ZIP の展開と読み込み、実行ポリシーで読み込めないときの方法、よくある質問。">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://yorozu-craft.com/ADSearch/guide.html">
+  <meta property="og:site_name" content="yorozu-craft">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:image" content="https://yorozu-craft.com/ADSearch/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "RSAT（ActiveDirectory モジュール）が無くても使えますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "はい。.NET の System.DirectoryServices（ADSI／LDAP）だけを使うので、RSAT のインストールは要りません。ドメインに参加した Windows 端末で、一般のドメインユーザーのまま動きます。" }
+      },
+      {
+        "@type": "Question",
+        "name": "AD の情報を書き換えることはありますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "ありません。公開しているコマンドはすべて取得（Get）・検索（Search）と自己診断だけです。テスト用のデータを作るスクリプト（forTest フォルダ）は検証用の環境専用で、本番では使わないでください。" }
+      },
+      {
+        "@type": "Question",
+        "name": "RSAT の Get-ADUser と同じ結果になりますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "主なパラメーターと出力のプロパティを RSAT に合わせています。-Identity は DN・ObjectGUID・SID・sAMAccountName を受け付け、見つからないときは RSAT と同じく例外になります。違いは README とリファレンスの「RSAT 互換プロパティ」「意図的な省略」に書いています。" }
+      },
+      {
+        "@type": "Question",
+        "name": "実行ポリシーで読み込めません",
+        "acceptedAnswer": { "@type": "Answer", "text": "同梱の Import-ADSearch.ps1 を使うと、ファイルを文字列として読み込んで取り込むため、ファイルの実行ポリシーの影響を受けません。ローカルにコピーできる場合は Unblock-File してから読み込む方法もあります。" }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Google AdSense（サイト所有確認 + 広告配信スクリプト） -->
+  <meta name="google-adsense-account" content="ca-pub-5375267956079717">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5375267956079717"
+     crossorigin="anonymous"></script>
+
+  <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15191d" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>ADSearch の使い方</h1>
+    <p class="subtitle">読み込み・読み込めないとき・よくある質問</p>
+    <p class="lang-switch"><a href="./en/guide.html" hreflang="en" lang="en">English</a></p>
+  </header>
+
+  <main class="app-main">
+
+    <p class="card" style="text-align:center"><a href="./">▶ ADSearch のダウンロードはこちら</a></p>
+
+    <section class="card content" id="howto" aria-labelledby="h-howto">
+      <h2 id="h-howto">使い方</h2>
+      <ol>
+        <li>ZIP を展開し、<code>ADSearch</code> フォルダごと手元かファイル共有に置きます</li>
+        <li>PowerShell で <code>Import-Module</code> に <code>ADSearch.psd1</code> を指定します</li>
+        <li><code>Invoke-ADSearchSelfTest</code> で、読み込めたかと DC に届くかを確かめます</li>
+      </ol>
+<pre><code>Import-Module C:\tools\ADSearch\ADSearch.psd1
+Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
+      <p class="small">例のドメイン名は架空のものです。</p>
+      <p>実行ポリシー（RemoteSigned など）で読み込めない場合は、同梱の <code>Import-ADSearch.ps1</code> を使います。</p>
+<pre><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
+    </section>
+
+    <section class="card content" id="faq" aria-labelledby="h-faq">
+      <h2 id="h-faq">よくある質問</h2>
+      <dl class="faq">
+        <dt>RSAT（ActiveDirectory モジュール）が無くても使えますか？</dt>
+        <dd>はい。.NET の System.DirectoryServices（ADSI／LDAP）だけを使うので、RSAT のインストールは要りません。ドメインに参加した Windows 端末で、一般のドメインユーザーのまま動きます。</dd>
+        <dt>AD の情報を書き換えることはありますか？</dt>
+        <dd>ありません。公開しているコマンドはすべて取得（Get）・検索（Search）と自己診断だけです。テスト用のデータを作るスクリプト（forTest フォルダ）は検証用の環境専用で、本番では使わないでください。</dd>
+        <dt>RSAT の Get-ADUser と同じ結果になりますか？</dt>
+        <dd>主なパラメーターと出力のプロパティを RSAT に合わせています。-Identity は DN・ObjectGUID・SID・sAMAccountName を受け付け、見つからないときは RSAT と同じく例外になります。違いは README とリファレンスの「RSAT 互換プロパティ」「意図的な省略」に書いています。</dd>
+        <dt>実行ポリシーで読み込めません</dt>
+        <dd>同梱の Import-ADSearch.ps1 を使うと、ファイルを文字列として読み込んで取り込むため、ファイルの実行ポリシーの影響を受けません。ローカルにコピーできる場合は Unblock-File してから読み込む方法もあります。</dd>
+      </dl>
+    </section>
+
+    <section class="card content" id="notes" aria-labelledby="h-notes">
+      <h2 id="h-notes">ご利用上の注意</h2>
+      <ul>
+        <li>社内の端末で使う前に、勤め先のルール（持ち込むソフトの扱い、ディレクトリへの問い合わせの可否）を確認してください</li>
+        <li>大量の検索を短い間隔で繰り返すと、DC に負荷がかかります。<code>-Filter</code> と <code>-SearchBase</code> で範囲を絞ってください</li>
+        <li>このページは使い方の案内で、モジュールは端末の中だけで動き、このサイトに何かを送ることはありません</li>
+        <li>無保証で提供しています</li>
+      </ul>
+      <p><a href="/post/?from=/ADSearch/guide.html">ご要望・不具合の報告</a>：いただいた内容をもとに直します。お返事はしていません。</p>
+      <p>サイト全体の運営者情報・免責事項は<a href="../about.html">こちら</a>、プライバシーポリシーは<a href="../privacy-policy.html">こちら</a>です（すべてのツールで共通）。</p>
+    </section>
+
+    <section class="card content" id="changelog" aria-labelledby="h-log">
+      <h2 id="h-log">更新履歴</h2>
+      <ul>
+        <li><time datetime="2026-11-04">2026年11月4日</time> 使い方ページを追加（よくある質問・注意・更新履歴を紹介ページから移した）</li>
+        <li><time datetime="2026-09-24">2026年9月24日</time> バージョン 1.4.1：<code>-Filter</code> の <code>'$true'</code>、<code>Get-ADComputer PC001</code>（<code>$</code> なし）、信頼・サイト・Exchange 構成の名前での <code>-Identity</code> が効かなかった不具合を修正。AD なしで確かめられるテストを追加</li>
+        <li><time datetime="2026-09-24">2026年9月24日</time> 公開（バージョン 1.4.0）</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <nav class="footer-nav" aria-label="フッターナビゲーション">
+      <ul>
+        <li><a href="../">yorozu-craft トップ</a></li>
+        <li><a href="./">ADSearch</a></li>
+        <li><a href="./guide.html" aria-current="page">使い方</a></li>
+        <li><a href="./reference.html">リファレンス</a></li>
+        <li><a href="../about.html">運営者情報</a></li>
+        <li><a href="../privacy-policy.html">プライバシーポリシー</a></li>
+      </ul>
+    </nav>
+    <p>&copy; 2026 yorozu-craft. All rights reserved.</p>
+  </footer>
+
+  <!-- Cloudflare Web Analytics（Cookie を使わないアクセス解析） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b79bf821e1fd4b6683866d493b1de426"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
