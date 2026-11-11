@@ -186,13 +186,11 @@ function ADSI_ToInt64($v) {
 }
 
 # gPLink 文字列（"[LDAP://<gpoDN>;<flags>][LDAP://<gpoDN>;<flags>]..."）から GPO DN 配列を返す。
-# 空文字列・未設定時は @() を返す。
+# RSAT と同じく、1 つでも 0 でも配列で返す（, を付けないと PowerShell が 1 要素の配列を中身 1 つに、空の配列を $null にする）
 function ADSI_ParseGpLink($v) {
-    if ([string]::IsNullOrWhiteSpace($v)) { return @() }
-    $s = [string]$v
-    $matches = [System.Text.RegularExpressions.Regex]::Matches($s, '\[LDAP://([^;]+);[^\]]+\]', 'IgnoreCase')
-    if ($matches.Count -eq 0) { return @() }
-    @($matches | ForEach-Object { $_.Groups[1].Value })
+    if ([string]::IsNullOrWhiteSpace($v)) { return , @() }
+    $found = [System.Text.RegularExpressions.Regex]::Matches([string]$v, '\[LDAP://([^;]+);[^\]]+\]', 'IgnoreCase')
+    return , @($found | ForEach-Object { $_.Groups[1].Value })
 }
 
 function ADSI_FileTimeToDate($v) {
@@ -287,8 +285,23 @@ function ADSI_GetAuthTypes([switch]$UseSSL) {
     $a
 }
 
+# -Server を省いたときの接続先。ドメインユーザーでログオンしていれば $null（serverless。ログオンのドメインの DC を ADSI が探す）。
+# ローカルのアカウントでログオンしている（runas /netonly を含む）ときは serverless が「ドメインが見つからない」で失敗するので、
+# RSAT の AD モジュールと同じく、コンピューターが参加しているドメインの名前を接続先にする（1 回だけ調べて覚える）
+$script:ADSI_ComputerDomain = $null
+function ADSI_DefaultServer {
+    if ($env:USERDNSDOMAIN) { return $null }
+    if ($null -eq $script:ADSI_ComputerDomain) {
+        $script:ADSI_ComputerDomain = ''
+        try { $script:ADSI_ComputerDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain().Name } catch {}
+    }
+    if ($script:ADSI_ComputerDomain) { return $script:ADSI_ComputerDomain }
+    return $null
+}
+
 function ADSI_MakeLdapPath($Server, $Path, [switch]$UseSSL) {
     $s = $Server
+    if (-not $s) { $s = ADSI_DefaultServer }
     if ($UseSSL -and $s -and $s -notmatch ':\d+$') { $s = "$s`:636" }
     if ($s) { "LDAP://$s/$Path" } else { "LDAP://$Path" }
 }
@@ -414,6 +427,11 @@ function New-ADSConnection {
         }
         $hrText = ''
         if ($null -ne $hr) { $hrText = ' (0x{0:X8})' -f ([uint32]($hr -band 0xffffffffL)) }
+        # 起点（-SearchBase など）が無いときは、ADSI の文面（"Exception setting AuthenticationType …"）では原因が読めないので名指しする。
+        # 0x80072030 は残す（呼ぶ側が ADSI_IsNoSuchObject で「無い置き場」を見分けるため）
+        if ($null -ne $hr -and ([uint32]($hr -band 0xffffffffL)) -eq 0x80072030) {
+            throw "検索の起点が見つかりません: '$Path'（-SearchBase などの DN を確かめてください。既定の Users は OU でなく CN=Users） (Server='$Server')$hrText"
+        }
         throw "New-ADSConnection に失敗しました (Server='$Server', Path='$Path', UseSSL=$UseSSL)$($hrText): $($_.Exception.Message)"
     }
 }
