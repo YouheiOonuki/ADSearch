@@ -832,6 +832,11 @@ Get-DnsServerResourceRecord -ZoneName _msdcs.corp.local -RRType SRV -ComputerNam
 # 1 台の A レコード
 Get-DnsServerResourceRecord corp.local pc001 -RRType A -ComputerName dc01.corp.local</code></pre>
 <div class="note">ゾーンが見つからないときは RSAT と同じくエラーになります。消したレコードは出しません（必要なら <code>Get-ADDnsRecord -IncludeTombstoned</code>）。</div>
+<div class="note">
+<strong>一般ユーザーで RSAT と食い違うもの</strong>（実機の DC で確かめたもの）<br>
+・<strong>管理者が手で作った静的レコードは出ないことがあります。</strong>RSAT は DNS サーバーが自分の権限で読みますが、ADSearch はあなたの権限で LDAP を読みます。DC や PC が自分で登録したレコードには「Everyone: 読み取り」が付きますが、DNS マネージャーで管理者が作ったものには付かず、Domain Users には見えません。<br>
+・<strong>動的レコードの時刻（Timestamp）と SOA の通番は、AD に書かれた値です。</strong>エージングが無効のゾーンでは DNS サーバーが新しい時刻を AD に書き戻さないため、RSAT より古く出ます。
+</div>
 
 <!-- ========================================================== -->
 <h2 id="Get-ADDnsRecord">Get-ADDnsRecord <span class="badge badge-new">追加機能</span></h2>
