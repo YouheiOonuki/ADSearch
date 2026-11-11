@@ -33,20 +33,22 @@ function ADSI_DnsU32BE([byte[]]$B, [int]$Off) {
 }
 
 # DNS_COUNT_NAME（MS-DNSP 2.2.2.2.2）: 長さ 1 + ラベル数 1 + ラベルの並び（長さ付き、0 で終わる）。
+# 次の位置は、長さの欄（終わりの 0 を含むかで実装により 1 ずれうる）に頼らず、ラベルを終わりの 0 まで歩いて決める。
 # 返す: @{ Name = 'host.corp.local.'; Next = 次の位置 }。名前は RSAT と同じく末尾にドット
 function ADSI_DnsReadCountName([byte[]]$B, [int]$Off) {
     if ($Off + 2 -gt $B.Length) { return @{ Name = $null; Next = $B.Length } }
-    $len = [int]$B[$Off]; $count = [int]$B[$Off + 1]
-    $pos = $Off + 2; $end = [Math]::Min($B.Length, $Off + 2 + $len)
+    $count = [int]$B[$Off + 1]
+    $pos = $Off + 2
     $labels = New-Object System.Collections.Generic.List[string]
-    for ($i = 0; $i -lt $count -and $pos -lt $end; $i++) {
+    for ($i = 0; $i -lt $count -and $pos -lt $B.Length; $i++) {
         $l = [int]$B[$pos]
         if ($l -eq 0) { break }
-        $labels.Add([Text.Encoding]::UTF8.GetString($B, $pos + 1, [Math]::Min($l, $end - $pos - 1)))
+        $labels.Add([Text.Encoding]::UTF8.GetString($B, $pos + 1, [Math]::Max(0, [Math]::Min($l, $B.Length - $pos - 1))))
         $pos += 1 + $l
     }
+    if ($pos -lt $B.Length -and $B[$pos] -eq 0) { $pos++ }   # 終わりの 0
     $name = if ($labels.Count) { ($labels -join '.') + '.' } else { '.' }
-    return @{ Name = $name; Next = $Off + 2 + $len }
+    return @{ Name = $name; Next = [Math]::Min($pos, $B.Length) }
 }
 
 # DNS_RPC_NAME の並び（TXT）: 長さ 1 + 文字。データの終わりまで
@@ -322,9 +324,10 @@ function ADSI_DnsSearchIn {
     $conn = $null
     try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Base }
     catch {
-        if (ADSI_IsNoSuchObject $_.Exception.Message) { return }
+        # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
+        if (ADSI_IsNoSuchObject $_.Exception.Message) { return $null }
         Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
-        return
+        return $null
     }
     $rows = New-Object System.Collections.Generic.List[object]
     try {
@@ -386,6 +389,7 @@ function Get-DnsServerZone {
             $or = ($Name | ForEach-Object { "(name=$(ADSI_EscapeLdapValue $_))"; if ($_ -ieq 'TrustAnchors') { '(name=..TrustAnchors)' } }) -join ''
             $filter = "(&$filter(|$or))"
         }
+        $emitted = 0
         foreach ($plan in $plans) {
             $rows = ADSI_DnsSearchIn -Plan $plan -Server $ComputerName -UseSSL:$UseSSL -Credential $Credential -Base $plan.Container `
                 -Filter $filter -SearchScope OneLevel -Properties @('name', 'dnsProperty', 'distinguishedName', 'whenCreated', 'whenChanged')
@@ -395,6 +399,7 @@ function Get-DnsServerZone {
                 if ($zn -like '..Deleted*' -or $zn -like '..InProgress*' -or $zn -ieq 'RootDNSServers') { continue }
                 $set = ADSI_DnsZoneSettings $p['dnsproperty']
                 $display = ADSI_DnsZoneDisplayName $zn
+                $emitted++
                 [pscustomobject]@{
                     ZoneName               = $display
                     ZoneType               = $set.ZoneType
@@ -416,6 +421,8 @@ function Get-DnsServerZone {
                 }
             }
         }
+        # RSAT と同じく、名前を指定して 1 つも無ければエラー
+        if ($Name -and $emitted -eq 0) { throw "ゾーン '$($Name -join ', ')' が見つかりません（-Scope $Scope の AD 統合ゾーン）" }
     }
     catch {
         ADSI_ThrowLdap $_ 'Get-DnsServerZone に失敗しました'
@@ -426,7 +433,8 @@ function Get-DnsServerZone {
 # 返す: @{ Record（ADSI_ParseDnsRecord の結果）; Zone; Name; DN; WhenChanged; Plan } の並び
 function ADSI_DnsRecords {
     param($Server, [switch]$UseSSL, [pscredential]$Credential, [string]$Scope = 'Domain', [string]$Partition = 'All',
-          [string]$ZoneName, [string]$Name, [string[]]$RRType, [switch]$IncludeTombstoned)
+          [string]$ZoneName, [string]$Name, [string[]]$RRType, [switch]$IncludeTombstoned,
+          [ref]$ZoneFound)   # -ZoneName のゾーンがどこかの置き場にあったか（無ければ $false）
 
     $plans = @(ADSI_DnsContainers -Server $Server -UseSSL:$UseSSL -Credential $Credential -Scope $Scope -Partition $Partition)
     $filter = '(objectClass=dnsNode)'
@@ -440,6 +448,7 @@ function ADSI_DnsRecords {
         $base = if ($zoneRdn) { "DC=$(ADSI_DnsEscapeRdn $zoneRdn),$($plan.Container)" } else { $plan.Container }
         $rows = ADSI_DnsSearchIn -Plan $plan -Server $Server -UseSSL:$UseSSL -Credential $Credential -Base $base -Filter $filter `
             -SearchScope Subtree -Properties @('name', 'dnsRecord', 'distinguishedName', 'whenChanged')
+        if ($null -ne $rows -and $ZoneFound) { $ZoneFound.Value = $true }
         foreach ($p in $rows) {
             $dn = if ($p['distinguishedname'].Count) { [string]$p['distinguishedname'][0] } else { '' }
             $recName = if ($p['name'].Count) { [string]$p['name'][0] } else { '' }
@@ -551,8 +560,9 @@ function Get-DnsServerResourceRecord {
 
     try {
         $types = if ($RRType) { @($RRType) } else { $null }
+        $found = $false
         foreach ($e in (ADSI_DnsRecords -Server $ComputerName -UseSSL:$UseSSL -Credential $Credential -Scope $Scope -Partition 'All' `
-                -ZoneName $ZoneName -Name $Name -RRType $types)) {
+                -ZoneName $ZoneName -Name $Name -RRType $types -ZoneFound ([ref]$found))) {
             [pscustomobject]@{
                 HostName   = $e.Name
                 RecordType = $e.Record.RecordType
@@ -562,6 +572,8 @@ function Get-DnsServerResourceRecord {
                 RecordData = $e.Record.RecordData
             }
         }
+        # RSAT と同じく、無いゾーンはエラーにする（空のゾーンと見分けられるように）
+        if (-not $found) { throw "ゾーン '$ZoneName' が見つかりません（-Scope $Scope の AD 統合ゾーン）" }
     }
     catch {
         ADSI_ThrowLdap $_ 'Get-DnsServerResourceRecord に失敗しました'

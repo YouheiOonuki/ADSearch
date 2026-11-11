@@ -105,9 +105,18 @@ Get-ADDnsRecord -Name pc001 -ComputerName dc01.corp.local
 
 # DNS の探索先パーティションを限定（子ドメインで ForestDnsZones だけ見たいとき等）
 Get-ADDnsRecord -ComputerName dc01.corp.local -Partition Forest
+
+# AD 統合ゾーンの一覧（RSAT の Get-DnsServerZone と同じ名前・同じ欄）
+Get-DnsServerZone -ComputerName dc01.corp.local
+Get-DnsServerZone -ComputerName dc01.corp.local -Scope Forest   # フォレストのすべてのドメイン
+
+# ゾーンのレコード（RSAT の Get-DnsServerResourceRecord と同じ欄: HostName・RecordType・TimeToLive・RecordData）
+Get-DnsServerResourceRecord -ZoneName corp.local -RRType SRV -ComputerName dc01.corp.local
 ```
 
-> `Get-ADDnsRecord` は DomainDnsZones（ドメイン NC 配下）と ForestDnsZones（フォレストルート NC 配下）の両方を探索します。子ドメイン環境では両者の DN が異なります（例: `DC=DomainDnsZones,DC=main,DC=forestroot,DC=local` と `DC=ForestDnsZones,DC=forestroot,DC=local`）。`-Partition Domain` / `-Partition Forest` で片方に限定できます（既定は `Both`）。
+> DNS は AD の中の置き場をすべて読みます: DomainDnsZones（ドメイン NC 配下）・ForestDnsZones（フォレストルート NC 配下）・`CN=MicrosoftDNS,CN=System`（Windows 2000 互換の置き場）・独自のアプリケーション パーティション。子ドメインでは DomainDnsZones と ForestDnsZones の DN が異なります（例: `DC=DomainDnsZones,DC=main,DC=forestroot,DC=local` と `DC=ForestDnsZones,DC=forestroot,DC=local`）。`Get-ADDnsRecord -Partition` で `All`（既定）/ `Both`（Domain と Forest。1.4 までの既定）/ `Domain` / `Forest` / `Legacy` / `Custom` を選べます。`-Scope Forest` でフォレストのすべてのドメインを読みます。消したレコード（tombstone）は既定で出しません（`-IncludeTombstoned`）。
+>
+> **取れないもの**: AD に入っていないゾーン（ファイルのプライマリ・セカンダリ・自動で作られる `0/127/255.in-addr.arpa`）と、DNS サーバー自身の設定（フォワーダー・再帰など。サーバーのレジストリにあるため LDAP では読めない）。`-ComputerName` は DNS サーバーでなく、LDAP で読む DC です。
 
 ### アカウント状態の切り分け（ログイントラブル）
 

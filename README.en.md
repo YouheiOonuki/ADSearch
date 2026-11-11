@@ -107,9 +107,18 @@ Get-ADDnsRecord -Name pc001 -ComputerName dc01.corp.local
 
 # Limit which DNS partition is searched (e.g. only ForestDnsZones from a child domain)
 Get-ADDnsRecord -ComputerName dc01.corp.local -Partition Forest
+
+# AD-integrated zones (same name and properties as RSAT Get-DnsServerZone)
+Get-DnsServerZone -ComputerName dc01.corp.local
+Get-DnsServerZone -ComputerName dc01.corp.local -Scope Forest   # every domain in the forest
+
+# Records in a zone (same properties as RSAT Get-DnsServerResourceRecord: HostName, RecordType, TimeToLive, RecordData)
+Get-DnsServerResourceRecord -ZoneName corp.local -RRType SRV -ComputerName dc01.corp.local
 ```
 
-> `Get-ADDnsRecord` searches both DomainDnsZones (under the domain NC) and ForestDnsZones (under the forest root NC). In a child domain their DNs differ (for example `DC=DomainDnsZones,DC=main,DC=forestroot,DC=local` and `DC=ForestDnsZones,DC=forestroot,DC=local`). `-Partition Domain` / `-Partition Forest` limits the search to one of them (the default is `Both`).
+> DNS reads every place AD keeps zones: DomainDnsZones (under the domain NC), ForestDnsZones (under the forest root NC), `CN=MicrosoftDNS,CN=System` (the Windows 2000 compatible location) and custom application partitions. In a child domain the DomainDnsZones and ForestDnsZones DNs differ (for example `DC=DomainDnsZones,DC=main,DC=forestroot,DC=local` and `DC=ForestDnsZones,DC=forestroot,DC=local`). `Get-ADDnsRecord -Partition` accepts `All` (default), `Both` (Domain and Forest; the default up to 1.4), `Domain`, `Forest`, `Legacy` and `Custom`. `-Scope Forest` reads every domain in the forest. Deleted (tombstoned) records are hidden unless you pass `-IncludeTombstoned`.
+>
+> **Not available**: zones that are not stored in AD (file-backed primary and secondary zones, the auto-created `0/127/255.in-addr.arpa`) and the DNS server's own settings (forwarders, recursion; they live in the server's registry, which LDAP cannot read). `-ComputerName` is the DC that is read over LDAP, not the DNS server.
 
 ### Troubleshooting sign-in problems (account state)
 

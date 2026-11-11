@@ -243,6 +243,67 @@ $ad = @(Get-ADDnsRecord -Name pc001 -IncludeTombstoned)
 Check 'Get-ADDnsRecord -Name のフィルター（消したものも）' (& $mod { $script:DnsCalls[0] }) 'Subtree|CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local|(&(objectClass=dnsNode)(name=pc001))'
 Check 'Get-ADDnsRecord: ゾーン・Data・範囲' "$($ad[0].ZoneName) $($ad[0].Data) $($ad[0].ReplicationScope)" 'example.local 10.0.0.5 Domain'
 Check 'Get-ADDnsRecord -IncludeTombstoned で ZERO も' (($ad | ForEach-Object RecordType) -join ',') 'A,AAAA,ZERO'
+# 無いゾーン: 置き場が見つからない（偽物は $null を返す）ときは RSAT と同じくエラー
+& $mod {
+    Set-Item function:script:ADSI_DnsSearchIn_Real ${function:script:ADSI_DnsSearchIn}
+    Set-Item function:script:ADSI_DnsSearchIn {
+        param($Plan, $Server, [switch]$UseSSL, $Credential, [string]$Base, [string]$Filter, [string]$SearchScope, [string[]]$Properties)
+        if ($Base -like 'DC=nozone.local,*') { return $null }
+        if ($Filter -like '*(name=nozone.local)*') { return , (New-Object System.Collections.Generic.List[object]) }
+        ADSI_DnsSearchIn_Real @PSBoundParameters
+    }
+}
+CheckThrows 'Get-DnsServerResourceRecord: 無いゾーンはエラー' { Get-DnsServerResourceRecord -ZoneName nozone.local }
+CheckThrows 'Get-DnsServerZone -Name: 無いゾーンはエラー'      { Get-DnsServerZone -Name nozone.local }
+Check 'Get-DnsServerZone: 名前なしで 0 件はエラーにしない' (@(Get-DnsServerZone).Count) 3
+
+Write-Host '--- DNS: DNS_COUNT_NAME の長さの欄が終わりの 0 を含まない書き方でも、次の名前を正しく読む'
+$cn1 = CountName 'dc01.example.local'; $cn1[0] = [byte]($cn1[0] - 1)
+$soa2 = (BE32 7) + (BE32 900) + (BE32 600) + (BE32 86400) + (BE32 3600) + $cn1 + (CountName 'hostmaster.example.local')
+$r = InModule $parse @(, (Rec 6 3600 0 $soa2))
+Check 'SOA: 管理者（長さの欄が 1 少ない）' $r.RecordData.ResponsiblePerson 'hostmaster.example.local.'
+
+Write-Host '--- レビューの直し（2026-11-11）'
+Check '機能レベル 10 は Windows2025'    (InModule { ADSI_FunctionalLevelName 10 'Domain' }) 'Windows2025Domain'
+Check '機能レベル 7 は Windows2016'     (InModule { ADSI_FunctionalLevelName 7 'Forest' }) 'Windows2016Forest'
+Check 'ADSI_LeafCn: エスケープした , で切らない' (InModule { ADSI_LeafCn 'CN=Yamada\, Taro,OU=Users,DC=example,DC=local' }) 'Yamada, Taro'
+Check 'ADSI_LeafCn: 通常'                (InModule { ADSI_LeafCn 'CN=Sales,OU=Groups,DC=example,DC=local' }) 'Sales'
+
+# Get-ADGpoLink: gPLink の末尾がリンク順序 1
+& $mod {
+    function script:Get-ADOrganizationalUnit { [pscustomobject]@{ gPLink = '[LDAP://CN={BBBB0000-0000-0000-0000-000000000002},CN=Policies,CN=System,DC=example,DC=local;2][LDAP://CN={AAAA0000-0000-0000-0000-000000000001},CN=Policies,CN=System,DC=example,DC=local;0]' } }
+    function script:ADSI_Query { @([pscustomobject]@{ Name = '{AAAA0000-0000-0000-0000-000000000001}'; DisplayName = 'GPO-A' }, [pscustomobject]@{ Name = '{BBBB0000-0000-0000-0000-000000000002}'; DisplayName = 'GPO-B' }) }
+}
+$links = @(Get-ADGpoLink -Target 'OU=Test,DC=example,DC=local')
+Check 'Get-ADGpoLink: 末尾がリンク順序 1' (($links | ForEach-Object { "$($_.Order):$($_.GpoName):$($_.Enforced)" }) -join ',') '1:GPO-A:False,2:GPO-B:True'
+
+# Get-AcceptedDomain: EMS の DomainType の名前
+& $mod {
+    function script:ADSI_ExchangeRun {
+        @(0, 1, 2, 4) | ForEach-Object { [pscustomobject]@{ Name = "d$_"; msExchAcceptedDomainName = "d$_.example"; msExchAcceptedDomainFlags = $_; DistinguishedName = "CN=d$_" } }
+    }
+}
+Check 'Get-AcceptedDomain: DomainType' ((@(Get-AcceptedDomain) | ForEach-Object DomainType) -join ',') 'Authoritative,ExternalRelay,InternalRelay,Authoritative'
+
+# Get-ADDomainController: 接続先のドメインの DC だけ。Domain は serverReference から
+& $mod {
+    function script:ADSI_GetNamingContexts { [pscustomobject]@{ Default = 'DC=child,DC=example,DC=local'; Root = 'DC=example,DC=local'; Config = 'CN=Configuration,DC=example,DC=local'; DnsHostName = 'dc01.child.example.local' } }
+    function script:New-ADSConnection { [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name Dispose -Value {} -PassThru }
+    function script:ADSI_NewSearcher {
+        $rows = New-Object System.Collections.Generic.List[object]
+        foreach ($s in @('DC01', 'ROOTDC')) {
+            $rows.Add([pscustomobject]@{ Properties = @{ distinguishedname = @("CN=NTDS Settings,CN=$s,CN=Servers,CN=Tokyo,CN=Sites,CN=Configuration,DC=example,DC=local"); objectclass = @('top', 'nTDSDSA'); options = @(1) } })
+        }
+        $rows | Add-Member -MemberType ScriptMethod -Name Dispose -Value {} -Force
+        [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name FindAll -Value { $rows }.GetNewClosure() -PassThru | Add-Member -MemberType ScriptMethod -Name Dispose -Value {} -PassThru
+    }
+    function script:ADSI_GetAttrs($Conn, $DN, $Attrs) {
+        if ($DN -like 'CN=DC01,*') { @{ dnshostname = @('dc01.child.example.local'); serverreference = @('CN=DC01,OU=Domain Controllers,DC=child,DC=example,DC=local') } }
+        else { @{ dnshostname = @('rootdc.example.local'); serverreference = @('CN=ROOTDC,OU=Domain Controllers,DC=example,DC=local') } }
+    }
+}
+$dcs = @(Get-ADDomainController)
+Check 'Get-ADDomainController: 接続先のドメインの DC だけ' (($dcs | ForEach-Object { "$($_.Name)@$($_.Domain)@$($_.Site)" }) -join ',') 'DC01@child.example.local@Tokyo'
 
 # ------------------------------------------------------------
 Write-Host ''
