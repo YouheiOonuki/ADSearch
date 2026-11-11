@@ -71,10 +71,11 @@ function ADSI_ExchangeFqdn($networkAddress) {
     return $null
 }
 
-# DN の先頭 CN を取り出す
+# DN の先頭 CN を取り出す（値の中のエスケープした , で切らず、\, \+ などのエスケープを外す）
 function ADSI_LeafCn([string]$dn) {
     if ([string]::IsNullOrWhiteSpace($dn)) { return $null }
-    (($dn -split ',')[0] -replace '(?i)^CN=', '')
+    $first = [regex]::Split($dn, '(?<!\\),')[0]
+    (($first -replace '(?i)^CN=', '') -replace '\\(.)', '$1')
 }
 
 <#
@@ -217,8 +218,11 @@ function Get-AcceptedDomain {
             -Properties @('msExchAcceptedDomainName','msExchAcceptedDomainFlags') `
             -Timeout $Timeout -ProgressActivity 'Get-AcceptedDomain' |
         ForEach-Object {
+            # msExchAcceptedDomainFlags の下位 2 ビットが種類（EMS の DomainType と同じ名前: 0 Authoritative・1 ExternalRelay・2 InternalRelay）
             $flags = ADSI_ToInt64 $_.msExchAcceptedDomainFlags
-            $type  = if ($null -eq $flags) { $null } elseif ($flags -eq 0) { 'Authoritative' } else { "Relay($flags)" }
+            $type  = if ($null -eq $flags) { $null } else {
+                switch ($flags -band 3) { 0 { 'Authoritative' } 1 { 'ExternalRelay' } 2 { 'InternalRelay' } default { "Unknown($flags)" } }
+            }
             $dom   = if ($_.msExchAcceptedDomainName) { $_.msExchAcceptedDomainName } else { $_.Name }
             [pscustomobject]@{
                 Name              = $_.Name

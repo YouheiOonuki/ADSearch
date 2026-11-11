@@ -42,8 +42,11 @@
             }
         }
 
+        # gPLink は優先度の低いリンクから順に並ぶ（GPMC のリンク順序 1 は末尾の要素）。
+        # 末尾から 1, 2, … と数え、リンク順序の順に出す（RSAT の Get-GPInheritance・GPMC と同じ番号）
         $order = 1
-        foreach ($m in $matches_) {
+        for ($i = $matches_.Count - 1; $i -ge 0; $i--) {
+            $m = $matches_[$i]
             $guid     = $m.Groups[1].Value
             $flag     = [int]$m.Groups[2].Value
 

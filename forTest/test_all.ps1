@@ -1,4 +1,4 @@
-# === CONFIG LOAD START ===
+﻿# === CONFIG LOAD START ===
 $ConfigPath = Join-Path $PSScriptRoot 'test_all.config.json'
 
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
@@ -642,6 +642,42 @@ Invoke-ADSearchCommandTest 'Get-ADDnsRecord / ZoneName filter (domain zone)' {
     if ($d) {
         Get-ADDnsRecord -ComputerName $Server -ZoneName $d.DNSRoot | Select-Object -First 5
     }
+}
+
+# ============================================================
+# Get-DnsServerZone / Get-DnsServerResourceRecord（1.5.0）
+# ============================================================
+
+Invoke-ADSearchCommandTest 'Get-DnsServerZone / default' {
+    $z = @(Get-DnsServerZone -ComputerName $Server)
+    if ($z.Count -eq 0) { throw 'ゾーンが 0 件' }
+    $z
+}
+
+Invoke-ADSearchCommandTest 'Get-DnsServerZone / Scope Forest' {
+    Get-DnsServerZone -ComputerName $Server -Scope Forest
+}
+
+Invoke-ADSearchCommandTest 'Get-DnsServerResourceRecord / domain zone SOA と NS' {
+    $d = Get-ADDomain @Common
+    $soa = @(Get-DnsServerResourceRecord -ZoneName $d.DNSRoot -Name '@' -RRType SOA -ComputerName $Server)
+    if ($soa.Count -ne 1 -or -not $soa[0].RecordData.PrimaryServer) { throw "SOA を読めない: $($soa.Count) 件" }
+    $ns = @(Get-DnsServerResourceRecord -ZoneName $d.DNSRoot -Name '@' -RRType NS -ComputerName $Server)
+    if ($ns.Count -eq 0 -or ($ns | Where-Object { -not $_.RecordData.NameServer })) { throw 'NS の名前が空' }
+    @($soa) + @($ns)
+}
+
+Invoke-ADSearchCommandTest 'Get-DnsServerResourceRecord / _msdcs の SRV' {
+    $d = Get-ADDomain @Common
+    $srv = @(Get-DnsServerResourceRecord -ZoneName "_msdcs.$($d.Forest)" -RRType SRV -ComputerName $Server)
+    if ($srv.Count -eq 0 -or ($srv | Where-Object { -not $_.RecordData.DomainName -or -not $_.RecordData.Port })) { throw 'SRV の名前かポートが空' }
+    $srv | Select-Object -First 5
+}
+
+Invoke-ADSearchCommandTest 'Get-DnsServerResourceRecord / 無いゾーンは例外' {
+    $threw = $false
+    try { Get-DnsServerResourceRecord -ZoneName 'zz-nonexistent.invalid' -ComputerName $Server | Out-Null } catch { $threw = $true }
+    if (-not $threw) { throw '例外が発生しませんでした' }
 }
 
 # ============================================================

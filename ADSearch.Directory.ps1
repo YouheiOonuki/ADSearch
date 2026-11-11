@@ -42,7 +42,8 @@ function ADSI_FunctionalLevelName($Level, $Kind = 'Domain') {
         4       { 'Windows2008R2'      }
         5       { 'Windows2012'        }
         6       { 'Windows2012R2'      }
-        7       { 'Windows2016'        }
+        7       { 'Windows2016'        }   # 2019・2022 も 7（機能レベルが増えなかった）
+        10      { 'Windows2025'        }   # Windows Server 2025（8・9 は使われていない）
         default { "Unknown($n)"        }
     }
     if ($b -like 'Unknown*') { $b } else { "$b$Kind" }
@@ -67,9 +68,8 @@ function Get-ADDomain {
         $partBase = "CN=Partitions,$($nc.Config)"
         $cPart = New-ADSConnection -Server $Server -UseSSL:$UseSSL -Credential $Credential -Path $partBase
         try {
-            $escaped = $nc.Default -replace '\(','\\28' -replace '\)','\\29'
             $pSrch = ADSI_NewSearcher -SearchRoot $cPart `
-                        -Filter "(&(objectClass=crossRef)(nCName=$escaped))" `
+                        -Filter "(&(objectClass=crossRef)(nCName=$(ADSI_EscapeLdapValue $nc.Default)))" `
                         -Scope OneLevel -Properties @('nETBIOSName')
             $pRes = $null
             try {
@@ -300,17 +300,24 @@ function Get-ADDomainController {
                 $serverCN = if ($parts.Count -ge 1) { $parts[0] -replace '^CN=','' } else { $null }
                 $siteCN   = if ($parts.Count -ge 3) { $parts[2] -replace '^CN=','' } else { $null }
 
-                # サーバーオブジェクトから dNSHostName を取得
+                # サーバーオブジェクトから dNSHostName と serverReference（DC のコンピューターの DN = どのドメインの DC か）を取得
                 $hostName = $null
+                $dcDomain = $null
                 try {
                     $cSrv = New-ADSConnection -Server $Server -UseSSL:$UseSSL -Credential $Credential -Path $serverDN
                     try {
-                        $sp = ADSI_GetAttrs $cSrv $serverDN @('dNSHostName')
-                        if ($sp) { $hostName = [string](ADSI_FirstVal $sp 'dNSHostName') }
+                        $sp = ADSI_GetAttrs $cSrv $serverDN @('dNSHostName','serverReference')
+                        if ($sp) {
+                            $hostName = [string](ADSI_FirstVal $sp 'dNSHostName')
+                            $ref = [string](ADSI_FirstVal $sp 'serverReference')
+                            if ($ref) { $dcDomain = ADSI_DnToDns $ref }
+                        }
                     }
                     finally { $cSrv.Dispose() }
                 }
                 catch {}
+                # serverReference が読めないときはホスト名のドメイン部分で判定する
+                if (-not $dcDomain -and $hostName -and $hostName.Contains('.')) { $dcDomain = $hostName.Substring($hostName.IndexOf('.') + 1) }
 
                 $opts    = ADSI_ToInt64 $(if ($p.Contains('options') -and $p['options'].Count) { $p['options'][0] } else { $null })
                 $isGC    = if ($null -eq $opts) { $false } else { [bool]($opts -band 1) }
@@ -323,7 +330,7 @@ function Get-ADDomainController {
                     Site            = $siteCN
                     IsGlobalCatalog = $isGC
                     IsReadOnly      = $isRO
-                    Domain          = ADSI_DnToDns $nc.Default
+                    Domain          = $dcDomain
                     Forest          = ADSI_DnToDns $nc.Root
                 }
             }
@@ -337,8 +344,12 @@ function Get-ADDomainController {
 
     # -Filter が '*' または空なら全件返す。複雑なフィルターはクライアント側無視（警告なし）
     $useFilter = $Filter -and $Filter -ne '*'
+    # RSAT と同じく、接続先のドメインの DC だけを返す（CN=Sites はフォレスト共通なので、ほかのドメインの DC も並ぶ）。
+    # どのドメインか判定できない DC は落とさない
+    $myDomain = ADSI_DnToDns $nc.Default
     # -Identity はクライアント側で Name または HostName と照合
     foreach ($dc in $dcs) {
+        if ($dc.Domain -and $dc.Domain -ine $myDomain) { continue }
         if ($Identity -and $dc.Name -notlike $Identity -and $dc.HostName -notlike $Identity) { continue }
         if ($useFilter) {
             # 単純 Identity 風フィルターのみ対応（未対応フィルターはベストエフォートで全件返す）

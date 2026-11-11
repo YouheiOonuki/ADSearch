@@ -97,6 +97,8 @@
   <div class="nav-group">追加機能</div>
   <a href="#Get-ADGpoLink">Get-ADGpoLink</a>
   <a href="#Get-ADDnsRecord">Get-ADDnsRecord</a>
+  <a href="#Get-DnsServerZone">Get-DnsServerZone</a>
+  <a href="#Get-DnsServerResourceRecord">Get-DnsServerResourceRecord</a>
   <div class="nav-group">診断</div>
   <a href="#Get-ADUserHealth">Get-ADUserHealth</a>
   <a href="#Search-ADAccount">Search-ADAccount</a>
@@ -796,11 +798,44 @@ Get-ADGpoLink -Target "OU=Tokyo,OU=Corp,DC=corp,DC=local" -Server dc01.corp.loca
 <hr>
 
 <!-- ========================================================== -->
+<h2 id="Get-DnsServerZone">Get-DnsServerZone <span class="badge badge-new">追加機能</span></h2>
+<p>AD 統合 DNS のゾーンの一覧です。RSAT（DnsServer モジュール）の <code>Get-DnsServerZone</code> を LDAP で再現します。DNS サーバーへの RPC は使わず、Domain Users の権限で読めます。</p>
+<h3>構文</h3>
+<pre><code>Get-DnsServerZone [[-Name] &lt;string[]&gt;] [-Scope &lt;Domain|Forest&gt;]
+                  [-ComputerName &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+<h3>出力プロパティ</h3>
+<table>
+  <tr><th>プロパティ</th><th>説明</th></tr>
+  <tr><td>ZoneName / ZoneType</td><td>ゾーン名と種類（Primary・Stub・Forwarder＝条件付きフォワーダー）</td></tr>
+  <tr><td>IsDsIntegrated / IsReverseLookupZone</td><td>AD 統合か（常に True）・逆引きか</td></tr>
+  <tr><td>DynamicUpdate</td><td>None・NonsecureAndSecure・Secure</td></tr>
+  <tr><td>ReplicationScope / DirectoryPartitionName</td><td>置き場（Domain・Forest・Legacy・Custom）とパーティション名</td></tr>
+  <tr><td>Aging / NoRefreshInterval / RefreshInterval</td><td>エージングの設定</td></tr>
+  <tr><td>MasterServers</td><td>スタブと条件付きフォワーダーの転送先</td></tr>
+</table>
+<div class="note"><code>-Scope Forest</code> はフォレストのすべてのドメインのゾーンを読みます（RSAT には無い拡張）。消したゾーン・ルートヒント（RootDNSServers）は出しません。名前を指定して見つからないときはエラーになります。</div>
+
+<!-- ========================================================== -->
+<h2 id="Get-DnsServerResourceRecord">Get-DnsServerResourceRecord <span class="badge badge-new">追加機能</span></h2>
+<p>ゾーンのレコードです。RSAT の <code>Get-DnsServerResourceRecord</code> と同じ欄（HostName・RecordType・Type・Timestamp・TimeToLive・RecordData）を返します。</p>
+<h3>構文</h3>
+<pre><code>Get-DnsServerResourceRecord [-ZoneName] &lt;string&gt; [[-Name] &lt;string&gt;] [-RRType &lt;string&gt;] [-Scope &lt;Domain|Forest&gt;]
+                            [-ComputerName &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
+<h3>使用例</h3>
+<pre><code># ドメインコントローラーの SRV レコード
+Get-DnsServerResourceRecord -ZoneName _msdcs.corp.local -RRType SRV -ComputerName dc01.corp.local
+
+# 1 台の A レコード
+Get-DnsServerResourceRecord corp.local pc001 -RRType A -ComputerName dc01.corp.local</code></pre>
+<div class="note">ゾーンが見つからないときは RSAT と同じくエラーになります。消したレコードは出しません（必要なら <code>Get-ADDnsRecord -IncludeTombstoned</code>）。</div>
+
+<!-- ========================================================== -->
 <h2 id="Get-ADDnsRecord">Get-ADDnsRecord <span class="badge badge-new">追加機能</span></h2>
 <p>AD 統合 DNS のレコードを取得します。A / AAAA レコードの IP アドレスも解析して返します。</p>
 
 <h3>構文</h3>
-<pre><code>Get-ADDnsRecord [-Name &lt;string&gt;] [-ZoneName &lt;string&gt;] [-Partition &lt;Both|Domain|Forest&gt;]
+<pre><code>Get-ADDnsRecord [-Name &lt;string&gt;] [-ZoneName &lt;string&gt;] [-Partition &lt;All|Both|Domain|Forest|Legacy|Custom&gt;]
+                [-Scope &lt;Domain|Forest&gt;] [-RRType &lt;string[]&gt;] [-IncludeTombstoned]
                 [-ComputerName &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]</code></pre>
 
 <h3>パラメータ</h3>
@@ -808,7 +843,10 @@ Get-ADGpoLink -Target "OU=Tokyo,OU=Corp,DC=corp,DC=local" -Server dc01.corp.loca
   <tr><th>パラメータ</th><th>説明</th></tr>
   <tr><td><code>-Name</code></td><td>レコード名（ホスト部分）の完全一致でフィルター（例: <code>pc001</code>）</td></tr>
   <tr><td><code>-ZoneName</code></td><td>特定のゾーンに絞り込む（例: <code>corp.local</code>）。省略時は全ゾーン検索</td></tr>
-  <tr><td><code>-Partition</code></td><td>探索先の DNS アプリケーション パーティション。<code>Both</code>（既定）/ <code>Domain</code> / <code>Forest</code>。DomainDnsZones はドメイン NC 配下、ForestDnsZones はフォレストルート NC 配下にあり、<strong>子ドメインでは両者の DN が異なる</strong>（例: <code>DC=DomainDnsZones,DC=child,DC=corp,DC=local</code> と <code>DC=ForestDnsZones,DC=corp,DC=local</code>）。ForestDnsZones のゾーンだけを見たいときは <code>-Partition Forest</code></td></tr>
+  <tr><td><code>-Partition</code></td><td>探索先。<code>All</code>（既定。Domain・Forest・Legacy・Custom）/ <code>Both</code>（Domain と Forest。1.4 までの既定）/ <code>Domain</code> / <code>Forest</code> / <code>Legacy</code>（<code>CN=MicrosoftDNS,CN=System</code>）/ <code>Custom</code>（独自のアプリケーション パーティション）。DomainDnsZones はドメイン NC 配下、ForestDnsZones はフォレストルート NC 配下にあり、<strong>子ドメインでは両者の DN が異なる</strong>（例: <code>DC=DomainDnsZones,DC=child,DC=corp,DC=local</code> と <code>DC=ForestDnsZones,DC=corp,DC=local</code>）。ForestDnsZones のゾーンだけを見たいときは <code>-Partition Forest</code></td></tr>
+  <tr><td><code>-Scope</code></td><td><code>Domain</code>（既定。接続先のドメイン）/ <code>Forest</code>（フォレストのすべてのドメイン）</td></tr>
+  <tr><td><code>-RRType</code></td><td>レコードの種類で絞る（例: <code>A</code>, <code>SRV</code>）</td></tr>
+  <tr><td><code>-IncludeTombstoned</code></td><td>消したレコード（dNSTombstoned・ZERO）も出す</td></tr>
   <tr><td><code>-ComputerName</code></td><td>接続先 DC。<code>-Server</code> でも指定できます（<code>-Server</code> は <code>-ComputerName</code> の別名）。<code>-UseSSL</code> を使うときは指定が必須</td></tr>
 </table>
 
@@ -817,8 +855,11 @@ Get-ADGpoLink -Target "OU=Tokyo,OU=Corp,DC=corp,DC=local" -Server dc01.corp.loca
   <tr><th>プロパティ</th><th>説明</th></tr>
   <tr><td>ZoneName</td><td>DNS ゾーン名（例: corp.local）</td></tr>
   <tr><td>Name</td><td>レコード名（ホスト部分）</td></tr>
-  <tr><td>RecordType</td><td>レコード種別（A, AAAA, NS, CNAME, SOA, PTR, MX, TXT, SRV など）</td></tr>
-  <tr><td>Data</td><td>A / AAAA レコードは IP アドレス文字列。その他は null</td></tr>
+  <tr><td>RecordType</td><td>レコード種別（A, AAAA, NS, CNAME, SOA, PTR, MX, TXT, SRV など。知らない型は Type&lt;番号&gt;）</td></tr>
+  <tr><td>Data</td><td>中身を 1 行にしたもの（A は IP、CNAME は名前、MX は「優先度 名前」、SRV は「優先度 重み ポート 名前」など）</td></tr>
+  <tr><td>TimeToLive / Timestamp</td><td>TTL と、動的登録の時刻（静的は空）</td></tr>
+  <tr><td>RecordData</td><td>型ごとの欄（RSAT の RecordData と同じ名前: IPv4Address・HostNameAlias・MailExchange・DomainName・Port など）</td></tr>
+  <tr><td>ReplicationScope</td><td>置き場（Domain・Forest・Legacy・Custom）</td></tr>
   <tr><td>DistinguishedName</td><td>AD 内の DN</td></tr>
   <tr><td>WhenChanged</td><td>最終更新日時</td></tr>
 </table>
@@ -841,8 +882,8 @@ Get-ADDnsRecord -ComputerName dc01.child.corp.local -ZoneName child.corp.local
 Get-ADDnsRecord -ComputerName dc01.child.corp.local -Partition Forest</code></pre>
 
 <div class="note">
-<strong>対応ゾーン：</strong> 既定（<code>-Partition Both</code>）では DomainDnsZones と ForestDnsZones の両方を検索します。存在しないパーティションやゾーンは読み飛ばします。<br>
-<strong>IP アドレス解析：</strong> A レコード（IPv4）と AAAA レコード（IPv6）の Data フィールドに IP アドレスを返します。他のレコード種別は Data が null になります。
+<strong>対応ゾーン：</strong> 既定（<code>-Partition All</code>）では AD の中のすべての置き場を検索します。存在しないパーティションやゾーンは読み飛ばします。<br>
+<strong>取れないもの：</strong> AD に入っていないゾーン（ファイルのゾーン・セカンダリ）と、DNS サーバー自身の設定（フォワーダーなど）。
 </div>
 
 <hr>
