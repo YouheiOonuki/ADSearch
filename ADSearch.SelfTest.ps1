@@ -62,6 +62,8 @@
             # 追加機能
             'Get-ADGpoLink',
             'Get-ADDnsRecord',
+            'Get-DnsServerZone',
+            'Get-DnsServerResourceRecord',
             # 診断
             'Get-ADUserHealth',
             'Search-ADAccount',

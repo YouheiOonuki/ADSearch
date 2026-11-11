@@ -1,4 +1,4 @@
-# === CONFIG LOAD START ===
+﻿# === CONFIG LOAD START ===
 $ConfigPath = Join-Path $PSScriptRoot 'test_all.config.json'
 
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
