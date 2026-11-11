@@ -224,11 +224,11 @@ Invoke-ADSearchCommandTest 'Get-ADGroup / Identity' {
 }
 
 Invoke-ADSearchCommandTest 'Get-ADGroup / Filter' {
-    Get-ADGroup -Filter "Name -eq '$SampleGroup'" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
+    Get-ADGroup -Filter "SamAccountName -eq '$SampleGroup'" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
 }
 
 Invoke-ADSearchCommandTest 'Get-ADGroup / LDAPFilter' {
-    Get-ADGroup -LDAPFilter "(cn=$SampleGroup)" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
+    Get-ADGroup -LDAPFilter "(sAMAccountName=$SampleGroup)" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
 }
 
 Invoke-ADSearchCommandTest 'Get-ADGroup / Properties' {
@@ -240,11 +240,11 @@ Invoke-ADSearchCommandTest 'Get-ADGroup / Properties *' {
 }
 
 Invoke-ADSearchCommandTest 'Get-ADGroup / SearchBase' {
-    Get-ADGroup -LDAPFilter "(cn=$SampleGroup)" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
+    Get-ADGroup -LDAPFilter "(sAMAccountName=$SampleGroup)" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
 }
 
 Invoke-ADSearchCommandTest 'Get-ADGroup / SearchScope Subtree' {
-    Get-ADGroup -LDAPFilter "(cn=$SampleGroup)" @Common -SearchBase $TestBase -SearchScope Subtree -ResultSetSize $Cap | Select-Object -First 1
+    Get-ADGroup -LDAPFilter "(sAMAccountName=$SampleGroup)" @Common -SearchBase $TestBase -SearchScope Subtree -ResultSetSize $Cap | Select-Object -First 1
 }
 
 Invoke-ADSearchCommandTest 'Get-ADGroup / SearchScope OneLevel' {
