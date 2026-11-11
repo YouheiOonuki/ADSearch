@@ -409,6 +409,30 @@ function ADSI_PsFilterToLdap {
     return $ldap
 }
 
+# PowerShell 風 -Filter を、取得済みのオブジェクトに当てる述語にする（LDAP で絞れないもの用。Get-ADDomainController など）。
+# 受け付けるのは「欄名 -演算子 リテラル」と -and / -or / 括弧だけ。欄名は英数、値は引用符の文字・数・$true/$false に限り、
+# それ以外は例外にする（任意のコードを動かさない）。空・* は全件
+function ADSI_PsFilterToPredicate {
+    param([string]$Expr)
+
+    if ([string]::IsNullOrWhiteSpace($Expr) -or $Expr.Trim() -eq '*') { return { param($o) $true } }
+    $parts = foreach ($t in (ADSI_TokenizeFilter $Expr.Trim())) {
+        switch ($t.T) {
+            'LP'  { '(' }
+            'RP'  { ')' }
+            'AND' { ' -and ' }
+            'OR'  { ' -or ' }
+            'COMP' {
+                if ($t.V -notmatch '^\s*([A-Za-z][A-Za-z0-9]*)\s+-(eq|ne|like|notlike|ge|le|gt|lt)\s+(.+?)\s*$') { throw "未対応の -Filter 句: $($t.V)" }
+                $left = $Matches[1]; $op = $Matches[2].ToLowerInvariant(); $right = $Matches[3]
+                if ($right -notmatch "^('([^']|'')*'|`"[^`"`$``]*`"|\`$true|\`$false|-?\d+(\.\d+)?)$") { throw "-Filter の値は引用符の文字・数・`$true/`$false だけです: $right" }
+                "(`$o.'$left' -$op $right)"
+            }
+        }
+    }
+    [scriptblock]::Create("param(`$o) " + ($parts -join ''))
+}
+
 function ADSI_ConvertFilterToLDAP {
     param(
         [string]$Filter,

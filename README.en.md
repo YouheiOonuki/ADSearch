@@ -398,6 +398,8 @@ More forest information.
 | `SchemaMaster` | `fSMORoleOwner` of the Schema NC |
 | `DomainNamingMaster` | `fSMORoleOwner` of CN=Partitions,\<Config\> |
 | `Domains` | `nCName` of the crossRefs in Partitions (those with `nETBIOSName`) → DNS names |
+| `ApplicationPartitions` | DNs of crossRefs that are application partitions (`systemFlags` bit 4 set, not a domain) |
+| `GlobalCatalogs` | `dNSHostName` of the servers whose nTDSDSA has `options` bit 0x1 |
 | `UPNSuffixes` | `uPNSuffixes` of CN=Partitions,\<Config\> (multi-valued) |
 | `Sites` | Names of the site objects directly under CN=Sites,\<Config\> |
 

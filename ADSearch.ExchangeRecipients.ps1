@@ -310,7 +310,7 @@ function Get-Recipient {
 
         $attrs = $script:ADSI_RecipientCoreAttrs + @(
                    'msExchRecipientTypeDetails','msExchHideFromAddressLists',
-                   'objectClass','homeMDB','targetAddress')
+                   'objectClass','homeMDB','targetAddress','groupType')
 
         ADSI_RecipientRun -Server $Server -UseSSL:$UseSSL -Credential $Credential `
             -Filter $f -LoadAttrs $attrs -ResultSetSize $ResultSetSize `
@@ -328,7 +328,11 @@ function Get-Recipient {
             $recipientType = if ($ocLast -eq 'msExchDynamicDistributionList') {
                 'DynamicDistributionGroup'
             } elseif ($ocLast -eq 'group') {
-                'MailUniversalDistributionGroup'
+                # EMS と同じく groupType で分ける: ユニバーサルでなければ MailNonUniversalGroup、セキュリティなら MailUniversalSecurityGroup
+                $gt = ADSI_ToInt64 $_.groupType
+                if ($null -ne $gt -and -not ($gt -band 8)) { 'MailNonUniversalGroup' }
+                elseif ($null -ne $gt -and ($gt -band 0x80000000L)) { 'MailUniversalSecurityGroup' }
+                else { 'MailUniversalDistributionGroup' }
             } elseif ($ocLast -eq 'contact') {
                 'MailContact'
             } elseif ($_.homeMDB) {
