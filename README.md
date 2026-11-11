@@ -117,6 +117,10 @@ Get-DnsServerResourceRecord -ZoneName corp.local -RRType SRV -ComputerName dc01.
 > DNS は AD の中の置き場をすべて読みます: DomainDnsZones（ドメイン NC 配下）・ForestDnsZones（フォレストルート NC 配下）・`CN=MicrosoftDNS,CN=System`（Windows 2000 互換の置き場）・独自のアプリケーション パーティション。子ドメインでは DomainDnsZones と ForestDnsZones の DN が異なります（例: `DC=DomainDnsZones,DC=main,DC=forestroot,DC=local` と `DC=ForestDnsZones,DC=forestroot,DC=local`）。`Get-ADDnsRecord -Partition` で `All`（既定）/ `Both`（Domain と Forest。1.4 までの既定）/ `Domain` / `Forest` / `Legacy` / `Custom` を選べます。`-Scope Forest` でフォレストのすべてのドメインを読みます。消したレコード（tombstone）は既定で出しません（`-IncludeTombstoned`）。
 >
 > **取れないもの**: AD に入っていないゾーン（ファイルのプライマリ・セカンダリ・自動で作られる `0/127/255.in-addr.arpa`）と、DNS サーバー自身の設定（フォワーダー・再帰など。サーバーのレジストリにあるため LDAP では読めない）。`-ComputerName` は DNS サーバーでなく、LDAP で読む DC です。
+>
+> **一般ユーザーで RSAT と食い違うもの**（実機で確認、2026-11）:
+> - **管理者が手で作った静的レコードは出ないことがある**。RSAT は DNS サーバーに頼み、サーバーが自分の権限で読む。ADSearch は本人の権限で LDAP を読む。DC や PC が自分で登録したレコードには `Everyone: 読み取り` が付くが、DNS マネージャーなどで管理者が作ったノードには付かず、Domain Users には見えない（ゾーンの `Everyone: 読み取り` は子に継承されない）。
+> - **動的レコードの時刻（Timestamp）と SOA の通番は AD に書かれた値**。エージングが無効のゾーンでは、DNS サーバーは更新した時刻を AD に書き戻さないので、RSAT（サーバーのメモリの値）より古く出る。
 
 ### アカウント状態の切り分け（ログイントラブル）
 

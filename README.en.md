@@ -119,6 +119,10 @@ Get-DnsServerResourceRecord -ZoneName corp.local -RRType SRV -ComputerName dc01.
 > DNS reads every place AD keeps zones: DomainDnsZones (under the domain NC), ForestDnsZones (under the forest root NC), `CN=MicrosoftDNS,CN=System` (the Windows 2000 compatible location) and custom application partitions. In a child domain the DomainDnsZones and ForestDnsZones DNs differ (for example `DC=DomainDnsZones,DC=main,DC=forestroot,DC=local` and `DC=ForestDnsZones,DC=forestroot,DC=local`). `Get-ADDnsRecord -Partition` accepts `All` (default), `Both` (Domain and Forest; the default up to 1.4), `Domain`, `Forest`, `Legacy` and `Custom`. `-Scope Forest` reads every domain in the forest. Deleted (tombstoned) records are hidden unless you pass `-IncludeTombstoned`.
 >
 > **Not available**: zones that are not stored in AD (file-backed primary and secondary zones, the auto-created `0/127/255.in-addr.arpa`) and the DNS server's own settings (forwarders, recursion; they live in the server's registry, which LDAP cannot read). `-ComputerName` is the DC that is read over LDAP, not the DNS server.
+>
+> **Where a regular user sees something different from RSAT** (checked on a real DC, 2026-11):
+> - **Static records an administrator created by hand may be missing.** RSAT asks the DNS server, which reads AD with its own rights; ADSearch reads LDAP with yours. Records that DCs and PCs register themselves carry `Everyone: Read`, but nodes an administrator creates in DNS Manager do not, so Domain Users cannot see them (the zone's `Everyone: Read` is not inherited by its children).
+> - **Timestamps of dynamic records and the SOA serial are the values stored in AD.** When aging is off, the DNS server does not write refreshed timestamps back to AD, so they show older than RSAT, which reports the server's in-memory values.
 
 ### Troubleshooting sign-in problems (account state)
 
