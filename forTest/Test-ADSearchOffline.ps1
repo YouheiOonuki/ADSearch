@@ -308,6 +308,19 @@ Check 'Get-ADDomainController: RSAT の DN の欄' "$($dcs[0].ComputerObjectDN)|
 Check 'Get-ADDomainController -Filter（取得後に絞る）' (@(Get-ADDomainController -Filter "Name -like 'zz*'").Count) 0
 Check 'Get-ADDomainController -Filter IsGlobalCatalog' (@(Get-ADDomainController -Filter 'IsGlobalCatalog -eq $true').Count) 1
 
+Write-Host '--- -Server を省いたときの接続先'
+$mk = { param($dom, $user) $script:ADSI_ComputerDomain = $dom; $old = $env:USERDNSDOMAIN; $env:USERDNSDOMAIN = $user; try { ADSI_MakeLdapPath $null 'DC=example,DC=local' } finally { $env:USERDNSDOMAIN = $old; $script:ADSI_ComputerDomain = $null } }
+Check 'ドメインユーザーのログオンは serverless'           (InModule $mk @('example.local', 'EXAMPLE.LOCAL')) 'LDAP://DC=example,DC=local'
+Check 'ローカルのログオンは参加しているドメインへ'        (InModule $mk @('example.local', $null)) 'LDAP://example.local/DC=example,DC=local'
+Check 'ドメイン参加していなければ serverless のまま'       (InModule $mk @('', $null)) 'LDAP://DC=example,DC=local'
+Check '-Server を付けたときはそのまま'                    (InModule { ADSI_MakeLdapPath 'dc01.example.local' 'RootDSE' }) 'LDAP://dc01.example.local/RootDSE'
+
+Write-Host '--- gPLink（LinkedGroupPolicyObjects は RSAT と同じく常に配列）'
+$gp = { param($v) $r = ADSI_ParseGpLink $v; "$($r.GetType().Name):$($r.Count)" }
+Check 'リンク 1 つでも配列'  (InModule $gp @('[LDAP://cn={A},cn=policies,cn=system,DC=example,DC=local;0]')) 'Object[]:1'
+Check 'リンク 2 つ'          (InModule $gp @('[LDAP://cn={A},cn=policies;0][LDAP://cn={B},cn=policies;2]')) 'Object[]:2'
+Check '空は空の配列'         (InModule $gp @('')) 'Object[]:0'
+
 Write-Host '--- 取得後の -Filter（述語）'
 $pred = { param($f, $o) & (ADSI_PsFilterToPredicate $f) $o }
 $o = [pscustomobject]@{ Name = 'DC01'; Site = 'Tokyo'; IsGlobalCatalog = $true }
