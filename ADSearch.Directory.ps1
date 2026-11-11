@@ -187,23 +187,32 @@ function Get-ADForest {
     # Domains: Partitions 内の crossRef オブジェクトで nETBIOSName が存在するもの → ドメイン NC → DNS 名
     # systemFlags で ADS_SYSTEMFLAG_CR_NTDS_DOMAIN(0x2) が立っているものが正確だが
     # nETBIOSName の存在で代替（ベストエフォート: MS Learn crossRef/Enumerating App Dir Partitions で確認）
-    $domains     = $null
-    $upnSuffixes = $null
-    $sites       = $null
+    $domains       = $null
+    $appPartitions = $null
+    $upnSuffixes   = $null
+    $sites         = $null
+    $gcs           = $null
     try {
         $cPart = New-ADSConnection -Server $Server -UseSSL:$UseSSL -Credential $Credential -Path $partBase
         try {
-            $dSrch = ADSI_NewSearcher -SearchRoot $cPart -Filter '(&(objectClass=crossRef)(nETBIOSName=*))' `
-                        -Scope OneLevel -Properties @('nCName','nETBIOSName')
+            $dSrch = ADSI_NewSearcher -SearchRoot $cPart -Filter '(objectClass=crossRef)' `
+                        -Scope OneLevel -Properties @('nCName','nETBIOSName','systemFlags')
             $dRes = $null
             try {
                 $dRes = $dSrch.FindAll()
-                $domains = @(foreach ($dr in $dRes) {
-                    $ncv = if ($dr.Properties.Contains('ncname') -and $dr.Properties['ncname'].Count) {
-                        [string]$dr.Properties['ncname'][0]
-                    } else { $null }
-                    if ($ncv) { ADSI_DnToDns $ncv }
-                })
+                $doms = New-Object System.Collections.Generic.List[string]
+                $apps = New-Object System.Collections.Generic.List[string]
+                foreach ($dr in $dRes) {
+                    $p   = $dr.Properties
+                    $ncv = if ($p.Contains('ncname') -and $p['ncname'].Count) { [string]$p['ncname'][0] } else { $null }
+                    if (-not $ncv) { continue }
+                    $sf  = if ($p.Contains('systemflags') -and $p['systemflags'].Count) { ADSI_ToInt64 $p['systemflags'][0] } else { 0 }
+                    if ($p.Contains('netbiosname') -and $p['netbiosname'].Count) { $doms.Add((ADSI_DnToDns $ncv)) }
+                    # アプリケーション パーティション: FLAG_CR_NTDS_NOT_GC_REPLICATED(4) が立ち、ドメイン(2) でない（RSAT の ApplicationPartitions と同じく DN）
+                    elseif (($sf -band 4) -and -not ($sf -band 2)) { $apps.Add($ncv) }
+                }
+                $domains = @($doms)
+                $appPartitions = @($apps | Sort-Object)
             }
             finally { if ($dRes) { $dRes.Dispose() } $dSrch.Dispose() }
 
@@ -234,6 +243,23 @@ function Get-ADForest {
                 })
             }
             finally { if ($sRes) { $sRes.Dispose() } $sSrch.Dispose() }
+
+            # GlobalCatalogs: options の bit 0（NTDSDSA_OPT_IS_GC）が立つ NTDS Settings の親（サーバー）の dNSHostName
+            $gSrch = ADSI_NewSearcher -SearchRoot $cSites -Filter '(&(objectClass=nTDSDSA)(options:1.2.840.113556.1.4.803:=1))' `
+                        -Scope Subtree -Properties @('distinguishedName')
+            $gRes = $null
+            $gcList = New-Object System.Collections.Generic.List[string]
+            try {
+                $gRes = $gSrch.FindAll()
+                foreach ($gr in $gRes) {
+                    $srvDN = ([string]$gr.Properties['distinguishedname'][0]) -replace '^CN=NTDS Settings,', ''
+                    $sp = ADSI_GetAttrs $cSites $srvDN @('dNSHostName')
+                    $hn = if ($sp) { [string](ADSI_FirstVal $sp 'dNSHostName') } else { $null }
+                    if ($hn) { $gcList.Add($hn) }
+                }
+            }
+            finally { if ($gRes) { $gRes.Dispose() } $gSrch.Dispose() }
+            $gcs = @($gcList | Sort-Object)
         }
         finally { $cSites.Dispose() }
     }
@@ -246,6 +272,8 @@ function Get-ADForest {
         SchemaMaster         = ADSI_FsmoOwnerHost $schemaFsmo $Server -UseSSL:$UseSSL -Credential $Credential
         DomainNamingMaster   = ADSI_FsmoOwnerHost $namingFsmo $Server -UseSSL:$UseSSL -Credential $Credential
         Domains              = $domains
+        ApplicationPartitions = $appPartitions
+        GlobalCatalogs       = $gcs
         UPNSuffixes          = $upnSuffixes
         Sites                = $sites
     }
@@ -303,6 +331,8 @@ function Get-ADDomainController {
                 # サーバーオブジェクトから dNSHostName と serverReference（DC のコンピューターの DN = どのドメインの DC か）を取得
                 $hostName = $null
                 $dcDomain = $null
+                $ref      = $null
+                $os       = $null
                 try {
                     $cSrv = New-ADSConnection -Server $Server -UseSSL:$UseSSL -Credential $Credential -Path $serverDN
                     try {
@@ -316,6 +346,18 @@ function Get-ADDomainController {
                     finally { $cSrv.Dispose() }
                 }
                 catch {}
+                # OperatingSystem はコンピューターオブジェクト（ドメイン NC）にある。接続先のドメインの DC だけ読む（ほかのドメインは後で落とす）
+                if ($ref -and $dcDomain -ieq (ADSI_DnToDns $nc.Default)) {
+                    try {
+                        $cCmp = New-ADSConnection -Server $Server -UseSSL:$UseSSL -Credential $Credential -Path $ref
+                        try {
+                            $cp = ADSI_GetAttrs $cCmp $ref @('operatingSystem')
+                            if ($cp) { $os = [string](ADSI_FirstVal $cp 'operatingSystem') }
+                        }
+                        finally { $cCmp.Dispose() }
+                    }
+                    catch {}
+                }
                 # serverReference が読めないときはホスト名のドメイン部分で判定する
                 if (-not $dcDomain -and $hostName -and $hostName.Contains('.')) { $dcDomain = $hostName.Substring($hostName.IndexOf('.') + 1) }
 
@@ -325,13 +367,20 @@ function Get-ADDomainController {
                 $isRO    = $oc -contains 'nTDSDSARO'
 
                 [pscustomobject]@{
-                    Name            = $serverCN
-                    HostName        = $hostName
-                    Site            = $siteCN
-                    IsGlobalCatalog = $isGC
-                    IsReadOnly      = $isRO
-                    Domain          = $dcDomain
-                    Forest          = ADSI_DnToDns $nc.Root
+                    Name                 = $serverCN
+                    HostName             = $hostName
+                    Site                 = $siteCN
+                    IsGlobalCatalog      = $isGC
+                    IsReadOnly           = $isRO
+                    Domain               = $dcDomain
+                    Forest               = ADSI_DnToDns $nc.Root
+                    IPv4Address          = ADSI_ResolveIPv4 $hostName
+                    OperatingSystem      = $os
+                    ComputerObjectDN     = $ref
+                    ServerObjectDN       = $serverDN
+                    NTDSSettingsObjectDN = $dsaDN
+                    LdapPort             = 389
+                    SslPort              = 636
                 }
             }
         }
@@ -342,8 +391,8 @@ function Get-ADDomainController {
     }
     finally { $connCfg.Dispose() }
 
-    # -Filter が '*' または空なら全件返す。複雑なフィルターはクライアント側無視（警告なし）
-    $useFilter = $Filter -and $Filter -ne '*'
+    # -Filter: DC の一覧は構成パーティションから組み立てた値なので、LDAP でなく取得後の欄で絞る（RSAT と同じ書き方を受け付ける）
+    $match = ADSI_PsFilterToPredicate $Filter
     # RSAT と同じく、接続先のドメインの DC だけを返す（CN=Sites はフォレスト共通なので、ほかのドメインの DC も並ぶ）。
     # どのドメインか判定できない DC は落とさない
     $myDomain = ADSI_DnToDns $nc.Default
@@ -351,9 +400,7 @@ function Get-ADDomainController {
     foreach ($dc in $dcs) {
         if ($dc.Domain -and $dc.Domain -ine $myDomain) { continue }
         if ($Identity -and $dc.Name -notlike $Identity -and $dc.HostName -notlike $Identity) { continue }
-        if ($useFilter) {
-            # 単純 Identity 風フィルターのみ対応（未対応フィルターはベストエフォートで全件返す）
-        }
+        if (-not (& $match $dc)) { continue }
         $dc
     }
 }
@@ -497,7 +544,19 @@ function Get-ADReplicationSiteLink {
             -SearchBase "CN=Inter-Site Transports,CN=Sites,$($nc.Config)" `
             -Filter $f `
             -DefaultProps @('Name','DistinguishedName') `
-            -Properties @('siteList','cost')
+            -Properties @('siteList','cost','replInterval','description') |
+        ForEach-Object {
+            # RSAT と同じ欄名（Cost・ReplicationFrequencyInMinutes・SitesIncluded）。siteList は 1.4 までの欄として残す
+            [pscustomobject]@{
+                Name                          = $_.Name
+                DistinguishedName             = $_.DistinguishedName
+                Cost                          = ADSI_ToInt64 $_.cost
+                ReplicationFrequencyInMinutes = ADSI_ToInt64 $_.replInterval
+                SitesIncluded                 = @($_.siteList | Where-Object { $_ })
+                Description                   = $_.description
+                siteList                      = $_.siteList
+            }
+        }
     }
     catch { ADSI_ThrowLdap $_ 'Get-ADReplicationSiteLink に失敗しました' }
 }
@@ -520,7 +579,18 @@ function Get-ADReplicationSubnet {
             -SearchBase "CN=Subnets,CN=Sites,$($nc.Config)" `
             -Filter $f `
             -DefaultProps @('Name','DistinguishedName') `
-            -Properties @('siteObject','location')
+            -Properties @('siteObject','location','description') |
+        ForEach-Object {
+            # RSAT と同じ欄名（Site はサイトの DN、Location）。siteObject は 1.4 までの欄として残す
+            [pscustomobject]@{
+                Name              = $_.Name
+                DistinguishedName = $_.DistinguishedName
+                Site              = $_.siteObject
+                Location          = $_.location
+                Description       = $_.description
+                siteObject        = $_.siteObject
+            }
+        }
     }
     catch { ADSI_ThrowLdap $_ 'Get-ADReplicationSubnet に失敗しました' }
 }
@@ -543,7 +613,23 @@ function Get-ADReplicationConnection {
             -SearchBase $nc.Config `
             -Filter $f `
             -DefaultProps @('Name','DistinguishedName') `
-            -Properties @('fromServer','options')
+            -Properties @('fromServer','options','enabledConnection') |
+        ForEach-Object {
+            # RSAT と同じ欄名。接続は受け取る側の DC の NTDS Settings の下にあるので、親の DN が ReplicateToDirectoryServer。
+            # options の bit 0（NTDSCONN_OPT_IS_GENERATED）が KCC が作った接続
+            $dn   = [string]$_.DistinguishedName
+            $opts = ADSI_ToInt64 $_.options
+            [pscustomobject]@{
+                Name                         = $_.Name
+                DistinguishedName            = $dn
+                ReplicateFromDirectoryServer = $_.fromServer
+                ReplicateToDirectoryServer   = ([regex]'(?<!\\),').Split($dn, 2)[1]   # 先頭の RDN を外した親（2 つに分ける）
+                AutoGenerated                = if ($null -eq $opts) { $null } else { [bool]($opts -band 1) }
+                Enabled                      = if ($null -eq $_.enabledConnection) { $true } else { [string]$_.enabledConnection -ieq 'TRUE' }
+                fromServer                   = $_.fromServer
+                options                      = $_.options
+            }
+        }
     }
     catch { ADSI_ThrowLdap $_ 'Get-ADReplicationConnection に失敗しました' }
 }

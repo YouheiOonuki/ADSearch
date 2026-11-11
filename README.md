@@ -396,11 +396,13 @@ Get-EmailAddressPolicy    -Server dc01.corp.local   # 電子メールアドレ�
 | `SchemaMaster` | Schema NC の `fSMORoleOwner` |
 | `DomainNamingMaster` | CN=Partitions,\<Config\> の `fSMORoleOwner` |
 | `Domains` | Partitions の crossRef（`nETBIOSName` あり）の `nCName` → DNS 名 |
+| `ApplicationPartitions` | Partitions の crossRef のうちアプリケーション パーティション（`systemFlags` の 4 が立ちドメインでない）の DN |
+| `GlobalCatalogs` | `options` の bit 0x1 が立つ nTDSDSA のサーバーの `dNSHostName` |
 | `UPNSuffixes` | CN=Partitions,\<Config\> の `uPNSuffixes`（多値） |
 | `Sites` | CN=Sites,\<Config\> 直下の site オブジェクト名 |
 
 ### Get-ADDomainController
-Config NC の nTDSDSA を全件列挙してすべての DC を返します（旧動作は `-Discover` スイッチで維持）。
+Config NC の nTDSDSA を列挙し、RSAT と同じく**接続先のドメインの DC** を返します（1.5 から。1.4 まではフォレストの全 DC に接続先のドメインを付けていた）。旧動作は `-Discover` スイッチで維持。
 
 | プロパティ | 取得元 |
 |---|---|
@@ -409,9 +411,12 @@ Config NC の nTDSDSA を全件列挙してすべての DC を返します（旧
 | `Site` | DN 階層から抽出したサイト CN |
 | `IsGlobalCatalog` | nTDSDSA `options` bit 0x1（NTDSDSA_OPT_IS_GC） |
 | `IsReadOnly` | objectClass に `nTDSDSARO` を含む場合（RODC） |
-| `Domain` / `Forest` | rootDSE から |
+| `Domain` | サーバーオブジェクトの `serverReference`（DC のコンピューターの DN）から |
+| `Forest` | rootDSE から |
+| `IPv4Address` / `OperatingSystem` | ホスト名の名前解決 / コンピューターオブジェクトの `operatingSystem` |
+| `ComputerObjectDN` / `ServerObjectDN` / `NTDSSettingsObjectDN` | 各オブジェクトの DN |
 
-`-Identity` はクライアント側で Name/HostName のワイルドカード一致。`-Filter '*'` または省略で全件返す。複雑な `-Filter` は現時点でベストエフォート（全件返す）。
+`-Identity` はクライアント側で Name/HostName のワイルドカード一致。`-Filter` は RSAT と同じ書き方（`"Name -like 'DC*' -and IsGlobalCatalog -eq $true"`）を、取得後の欄に当てて絞ります（値は引用符の文字・数・`$true`/`$false` だけ）。
 
 ### Get-ADTrust
 信頼関係の詳細情報を追加しました。
