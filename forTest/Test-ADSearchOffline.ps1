@@ -188,6 +188,33 @@ Check '-Partition Both は Domain と Forest だけ' ((InModule $plan @($refs, '
 Check '-Partition Legacy' ((InModule $plan @($refs, 'Forest', 'Legacy')) -join ' | ') 'Legacy:CN=MicrosoftDNS,CN=System,DC=child,DC=example,DC=local | Legacy:CN=MicrosoftDNS,CN=System,DC=example,DC=local'
 $srv = { param($r) $p = @(ADSI_DnsContainerPlan -CrossRefs $r -DomainNC 'DC=child,DC=example,DC=local' -RootNC 'DC=example,DC=local' -Scope Forest); ($p | ForEach-Object { "$(ADSI_DnsServerFor $_ 'dc01.child.example.local')" }) -join ',' }
 Check '接続先: 自ドメインは指定の DC、ほかは dnsRoot' (InModule $srv @(, $refs)) 'dc01.child.example.local,dc01.child.example.local,dc01.child.example.local,CustomDns.example.local,DomainDnsZones.example.local,example.local'
+$srv2 = { param($r) $p = @(ADSI_DnsContainerPlan -CrossRefs $r -DomainNC 'DC=child,DC=example,DC=local' -RootNC 'DC=example,DC=local' -Scope Domain); ($p | ForEach-Object { $_.DcHost = 'dc09.child.example.local'; "$(ADSI_DnsServerFor $_ $null)" }) -join ',' }
+Check '接続先: -Server なしは RootDSE が答えた DC（serverless にしない）' (InModule $srv2 @(, $refs)) 'dc09.child.example.local,dc09.child.example.local,dc09.child.example.local,CustomDns.example.local'
+
+Write-Host '--- DNS: コンテナを開けない一般ユーザー（0x8007200A）はパーティションの根元から探す'
+$fallback = {
+    # New-ADSConnection と ADSI_NewSearcher だけをこのブロックの中で偽物にする（ほかのテストに残さない）
+    function New-ADSConnection { param($Server, [switch]$UseSSL, $Credential, $Path)
+        if ($Path -like 'CN=MicrosoftDNS,*' -or $Path -like 'DC=*,CN=MicrosoftDNS,*') { throw "New-ADSConnection に失敗しました (Path='$Path') (0x8007200A): The specified directory service attribute or value does not exist." }
+        $script:FbRoot = $Path
+        [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name Dispose -Value {} -PassThru }
+    function ADSI_NewSearcher { param($SearchRoot, $Filter, $Scope, $Properties)
+        $script:FbScope = $Scope
+        $dns = @('DC=example.local,CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local',
+                 'DC=@,DC=example.local,CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local',
+                 'DC=pc1,DC=example.local,CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local',
+                 'DC=x,DC=other.local,CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local')
+        $rows = New-Object System.Collections.Generic.List[object]
+        foreach ($d in $dns) { $rows.Add([pscustomobject]@{ Properties = @{ distinguishedname = @($d); name = @(($d -split ',')[0] -replace '^DC=', '') } }) }
+        $rows | Add-Member -MemberType ScriptMethod -Name Dispose -Value {} -Force
+        [pscustomobject]@{} | Add-Member -MemberType ScriptMethod -Name FindAll -Value { $rows }.GetNewClosure() -PassThru | Add-Member -MemberType ScriptMethod -Name Dispose -Value {} -PassThru }
+    $plan = @{ Container = 'CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local'; Scope = 'Domain'; NCName = 'DC=DomainDnsZones,DC=example,DC=local'; Own = $true; DcHost = 'dc01' }
+    $z = ADSI_DnsSearchIn -Plan $plan -Base $plan.Container -Filter '(objectClass=dnsZone)' -SearchScope OneLevel -Properties @('name')
+    $r = ADSI_DnsSearchIn -Plan $plan -Base "DC=example.local,$($plan.Container)" -Filter '(objectClass=dnsNode)' -SearchScope Subtree -Properties @('name')
+    $n = ADSI_DnsSearchIn -Plan $plan -Base "DC=nozone.local,$($plan.Container)" -Filter '(objectClass=dnsNode)' -SearchScope Subtree -Properties @('name')
+    "$script:FbRoot|$script:FbScope|$(($z | ForEach-Object { $_['name'][0] }) -join ',')|$(($r | ForEach-Object { $_['name'][0] }) -join ',')|$($null -eq $n)"
+}
+Check 'コンテナの直下（ゾーン）とゾーンの下（レコード）だけを残す、無いゾーンは $null' (InModule $fallback) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
 
 Write-Host '--- DNS: DN とエスケープ'
 $zfd = { param($dn) ADSI_DnsZoneFromDN $dn }

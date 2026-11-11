@@ -305,12 +305,17 @@ function ADSI_DnsContainers {
         finally { if ($res) { $res.Dispose() }; $s.Dispose() }
     }
     finally { $conn.Dispose() }
-    ADSI_DnsContainerPlan -CrossRefs $refs -DomainNC $nc.Default -RootNC $nc.Root -Scope $Scope -Partition $Partition
+    # 接続先の DC（RootDSE の dnsHostName）を各置き場に持たせる。-Server を省いたとき、DN だけの serverless では
+    # DomainDnsZones などが 0x8007200A で開けない（実機で確認、2026-11-11）ので、いまのドメインの置き場はこの DC で開く
+    foreach ($p in (ADSI_DnsContainerPlan -CrossRefs $refs -DomainNC $nc.Default -RootNC $nc.Root -Scope $Scope -Partition $Partition)) {
+        $p.DcHost = $nc.DnsHostName
+        $p
+    }
 }
 
-# 置き場ごとの接続先: いまのドメインのものは指定の DC（無ければ serverless）、ほかのドメイン・独自のパーティションはその dnsRoot
+# 置き場ごとの接続先: いまのドメインのものは指定の DC（無ければ RootDSE が答えた DC）、ほかのドメイン・独自のパーティションはその dnsRoot
 function ADSI_DnsServerFor($Plan, $Server) {
-    if ($Plan.Own -and $Plan.Scope -ne 'Custom') { return $Server }
+    if ($Plan.Own -and $Plan.Scope -ne 'Custom') { if ($Server) { return $Server }; return $Plan.DcHost }
     if ($Plan.DnsRoot) { return $Plan.DnsRoot }
     return $Server
 }
@@ -322,12 +327,27 @@ function ADSI_DnsSearchIn {
 
     $srv = ADSI_DnsServerFor $Plan $Server
     $conn = $null
+    # 起点そのものを開けないとき（Domain Users は CN=MicrosoftDNS コンテナの objectClass を読めず、ADSI が 0x8007200A で開けない。
+    # 中のゾーン・レコードは読める。実機で確認、2026-11-11）は、パーティションの根元から探し、DN が起点の下にあるものだけを残す
+    $within = $null
     try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Base }
     catch {
         # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
         if (ADSI_IsNoSuchObject $_.Exception.Message) { return $null }
-        Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
-        return $null
+        if ($_.Exception.Message -match '0x8007200A' -and $Plan.NCName) {
+            try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Plan.NCName }
+            catch {
+                Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
+                return $null
+            }
+            $within = @{ Base = $Base; OneLevel = ($SearchScope -eq 'OneLevel') }
+            $SearchScope = 'Subtree'
+            if ($Properties -notcontains 'distinguishedName') { $Properties = @($Properties) + 'distinguishedName' }
+        }
+        else {
+            Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
+            return $null
+        }
     }
     $rows = New-Object System.Collections.Generic.List[object]
     try {
@@ -344,13 +364,25 @@ function ADSI_DnsSearchIn {
                     if ($null -ne $col) { for ($i = 0; $i -lt $col.Count; $i++) { $vals.Add($col[$i]) } }
                     $h[$k] = $vals
                 }
+                if ($within -and -not (ADSI_DnsUnder ([string]$h['distinguishedname'][0]) $within.Base $within.OneLevel)) { continue }
                 $rows.Add($h)
             }
         }
         finally { if ($res) { $res.Dispose() }; $s.Dispose() }
     }
     finally { $conn.Dispose() }
+    # 根元から探して 1 件も無ければ、起点（ゾーン）は無いものとみなす（ゾーンは必ず @ のノードを持つ）
+    if ($within -and $rows.Count -eq 0) { return $null }
     return , $rows
+}
+
+# DN が起点の下にあるか（OneLevel なら直下だけ）。大文字小文字は区別しない
+function ADSI_DnsUnder([string]$DN, [string]$Base, [bool]$OneLevel) {
+    $suffix = ',' + $Base
+    if (-not $DN.EndsWith($suffix, [StringComparison]::OrdinalIgnoreCase)) { return $false }
+    if (-not $OneLevel) { return $true }
+    $head = $DN.Substring(0, $DN.Length - $suffix.Length)
+    return ([regex]::Split($head, '(?<!\\),').Count -eq 1)   # 直下 = 先頭の RDN が 1 つだけ
 }
 
 function ADSI_DnsZoneDisplayName([string]$Name) {
