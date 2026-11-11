@@ -2,15 +2,99 @@
 <html lang="ja">
 <head>
 <meta name="robots" content="noindex">
-<link rel="canonical" href="https://yorozu-craft.com/ADSearch/reference.html">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ADSearch リファレンスマニュアル</title>
 <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15191d" media="(prefers-color-scheme: dark)">
-<link rel="stylesheet" href="./style.css">
 <style>
-  /* 色・字・余白・角は共通の皮（style.css）のトークン。ここは配置と表の形だけ */
+:root { --tap: 44px; --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem; --sp-6: 1.5rem; --sp-8: 2rem; --fs-s: 0.875rem; --fs-m: 1rem; --fs-l: 1.25rem; --fs-xl: 1.625rem; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 4px solid var(--focus-ring, #000); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus, #ffd43d);
+}
+@media (forced-colors: active) { :where(a, button, input, select, textarea, summary):focus-visible { outline-color: Highlight; } }
+:where(input, select, textarea, button) { font: inherit; color: inherit; }
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { font-size: max(1rem, 16px); }
+:where(button, summary, [role="button"]) { min-height: var(--tap); }
+:where(nav li > a, p.card > a:only-child, .lang-switch a, .crumb a) { display: inline-flex; align-items: center; min-height: var(--tap); }
+[aria-invalid="true"] { border-color: var(--error, #ce0000) !important; }
+.field-error { color: var(--error, #ce0000); font-weight: 700; margin-top: var(--sp-1); }
+.visually-hidden {
+  position: absolute !important; width: 1px !important; height: 1px !important; margin: 0 !important; padding: 0 !important;
+  overflow: hidden !important; clip-path: inset(50%) !important; white-space: nowrap !important; border: 0 !important;
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+@media print { ins.adsbygoogle, .google-auto-placed, iframe[id^="aswift"], iframe[id^="google_ads"] { display: none !important; } }
+:where(html:not([data-skin="base"])) {
+  color-scheme: light dark;
+  --bg: #eef0f2; --bg-2: #e2e6ea; --card: #fbfcfd; --text: #1d2125; --muted: #4c565f;
+  --accent: #0e5a6b; --accent-soft: #dcecef; --on-accent: #ffffff;
+  --border: #c5ccd3; --input-border: #6b7782;
+  --error: #ce0000; --ok: #197a4b; --focus: #ffd43d; --focus-ring: #000;
+  --font-ui: "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  --lh-body: 1.7; --lh-tight: 1.4; --radius: 6px; --line-input: 2px;
+}
+@media (prefers-color-scheme: dark) {
+  :where(html:not([data-skin="base"])) {
+    --bg: #15191d; --bg-2: #1c2227; --card: #1a1f24; --text: #e8ecef; --muted: #a8b3bc;
+    --accent: #6fc3d4; --accent-soft: #14323a; --on-accent: #0b1a1e;
+    --border: #2f373e; --input-border: #7a8792; --error: #ff8a7a; --ok: #6fcf97; --focus: #000; --focus-ring: #ffd43d;
+  }
+}
+:where(html:not([data-skin="base"])) body { font-family: var(--font-ui); background: var(--bg); color: var(--text); line-height: var(--lh-body); font-variant-numeric: tabular-nums; }
+:where(html:not([data-skin="base"])) h1 { font-size: var(--fs-xl); font-weight: 800; line-height: var(--lh-tight); }
+:where(html:not([data-skin="base"])) h2 { font-size: var(--fs-l); font-weight: 800; line-height: var(--lh-tight); }
+:where(html:not([data-skin="base"])) h3 { font-size: var(--fs-m); font-weight: 800; }
+:where(html:not([data-skin="base"])) a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+@media (hover: hover) { :where(html:not([data-skin="base"])) a:hover { text-decoration-thickness: 3px; } }
+:where(html:not([data-skin="base"])) :where(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+:where(html:not([data-skin="base"])) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { border: var(--line-input) solid var(--input-border); border-radius: var(--radius); background: var(--card); min-height: var(--tap); padding: var(--sp-1) var(--sp-3); }
+:where(html:not([data-skin="base"])) :where(input, select, textarea):focus { border-color: var(--text); }
+:where(html:not([data-skin="base"])) :where(button, .btn) { border: 1px solid var(--input-border); border-radius: var(--radius); background: var(--card); color: var(--text); font-weight: 700; padding: 0 var(--sp-4); cursor: pointer; }
+:where(html:not([data-skin="base"])) :where(button[type="submit"], .btn-primary) { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+:where(html:not([data-skin="base"])) a.btn { color: var(--text); }
+:where(html:not([data-skin="base"])) a.btn-primary { color: var(--on-accent); }
+:where(html:not([data-skin="base"])) :where(.chip) { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-3); border: 1px solid var(--input-border); border-radius: var(--radius); color: var(--text); text-decoration: none; font-weight: 700; }
+:where(html:not([data-skin="base"])) :where(.card) { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); }
+:where(html:not([data-skin="base"])) :where(details) > summary { padding-block: var(--sp-2); cursor: pointer; font-weight: 700; }
+:where(html:not([data-skin="base"])) :where(.result-num, .money, output) { font-size: var(--fs-xl); font-weight: 800; }
+:where(html:not([data-skin="base"])) :where(.notice, [data-keep]) { border-left: 4px solid var(--text); background: var(--bg-2); padding: var(--sp-2) var(--sp-3); }
+:where(html:not([data-skin="base"])) :where(.fixed-bar) { position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: var(--sp-2) var(--sp-4); }
+.app-header { text-align: center; padding: var(--sp-6) var(--sp-4); background: var(--bg-2); border-bottom: 1px solid var(--border); }
+.app-header .subtitle { font-size: var(--fs-s); color: var(--muted); margin: var(--sp-1) auto 0; max-width: 40em; }
+.app-main { max-width: 760px; margin: 0 auto; padding: var(--sp-4); }
+.app-main .card { margin-bottom: var(--sp-4); }
+.card h2 { border-bottom: 1px solid var(--border); padding-bottom: var(--sp-1); margin-bottom: var(--sp-3); }
+.content h3 { margin: var(--sp-4) 0 var(--sp-1); }
+.content :where(p, ul, ol, dl) { max-width: 40em; }
+.content p + p { margin-top: var(--sp-2); }
+.content :where(ul, ol) { padding-left: var(--sp-6); margin: var(--sp-1) 0; }
+.faq dt { font-weight: 700; margin-top: var(--sp-3); }
+.faq dt::before { content: 'Q. '; color: var(--accent); }
+.faq dd { color: var(--muted); padding: var(--sp-1) 0 var(--sp-2) var(--sp-4); border-bottom: 1px solid var(--border); }
+.small { font-size: var(--fs-s); color: var(--muted); margin-top: var(--sp-1); }
+.kind { font-size: var(--fs-s); color: var(--muted); }
+.lang-switch { font-size: var(--fs-s); margin-top: var(--sp-1); }
+.more { margin-top: var(--sp-3); border-top: 1px solid var(--border); padding-top: var(--sp-2); }
+.more[open] > summary { margin-bottom: var(--sp-2); }
+pre { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-3); overflow-x: auto; font-size: var(--fs-s); line-height: 1.6; margin: var(--sp-2) 0; max-width: 100%; }
+code { font-family: Consolas, "Courier New", monospace; overflow-wrap: anywhere; }
+pre code { overflow-wrap: normal; }
+.cmds { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); margin: var(--sp-2) 0 var(--sp-3); }
+.cmds code { background: var(--accent-soft); border-radius: var(--radius); padding: 0 var(--sp-2); font-size: var(--fs-s); }
+.btn-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.btn-row a.btn { display: inline-flex; align-items: center; text-decoration: none; min-height: var(--tap); }
+:where(html:not([data-skin="base"])) :where(p, li) > a:only-child { display: inline-flex; align-items: center; min-height: var(--tap); }
+.app-footer { text-align: center; padding: var(--sp-4); font-size: var(--fs-s); color: var(--muted); border-top: 1px solid var(--border); }
+.footer-nav ul { list-style: none; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 var(--sp-4); margin-bottom: var(--sp-2); }
+.footer-nav a { color: var(--muted); text-decoration: none; display: inline-flex; align-items: center; min-height: var(--tap); }
+.footer-nav a:hover, .footer-nav a[aria-current="page"] { color: var(--accent); }
+</style>
+<style>
+  /* 配置と表の形 */
   body { font-size: var(--fs-m); display: flex; flex-wrap: wrap; }
   /* サイドバー（目次） */
   nav {
@@ -38,7 +122,7 @@
   th { background: var(--bg-2); padding: var(--sp-2) var(--sp-3); text-align: left; font-weight: 800; border-bottom: 2px solid var(--text); }
   td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border); vertical-align: top; }
   .required { color: var(--error); font-weight: 700; }
-  /* 注記（皮の注意の帯と同じ形。note と warn の違いは文で書いてある） */
+  /* 注記 */
   .note, .warn { border-left: 4px solid var(--text); background: var(--bg-2); padding: var(--sp-2) var(--sp-3); margin: var(--sp-3) 0 var(--sp-4); }
   .subtitle { color: var(--muted); font-size: var(--fs-s); margin-bottom: var(--sp-6); }
   .badge { display: inline-block; font-size: var(--fs-s); padding: 0 var(--sp-2); border: 1px solid var(--input-border); border-radius: var(--radius); margin-left: var(--sp-2); vertical-align: middle; font-weight: 700; }
@@ -60,10 +144,8 @@
     main { max-width: 100%; padding: var(--sp-4); }
   }
 </style>
-  <link rel="manifest" href="/manifest.webmanifest">
 </head>
 <body>
-<p class="back"><a href="./">← ADSearch の紹介ページへ</a>（yorozu-craft）</p>
 
 <nav>
   <div class="nav-title">ADSearch</div>
@@ -141,7 +223,7 @@
 <main>
 
 <h1>ADSearch リファレンスマニュアル</h1>
-<p class="subtitle">Version 1.4.1 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+<p class="subtitle">Version 1.5.0 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
@@ -1345,6 +1427,16 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <!-- ========================================================== -->
 <h2 id="changelog">変更履歴</h2>
+<h3>1.5.0（2026-11-11）</h3>
+<p>DNS のゾーンとレコードを RSAT と同じ名前のコマンドで取れるようにし、全体を見直しました。実機の DC に対して、Domain Users の一般ユーザーで確かめています。</p>
+<ul>
+  <li><strong>追加：</strong><code>Get-DnsServerZone</code>・<code>Get-DnsServerResourceRecord</code>（RSAT の DnsServer モジュールと同じ名前・同じ欄）</li>
+  <li><strong>Get-ADDnsRecord：</strong>すべてのレコードの種類を解くように（以前は A・AAAA 以外の Data が空）。<code>-Partition</code> に <code>All</code>（既定）・<code>Legacy</code>・<code>Custom</code>、<code>-Scope Forest</code> を追加。消したレコードは既定で出さない（<code>-IncludeTombstoned</code>）</li>
+  <li><strong>一般ユーザーでの DNS：</strong>DNS の置き場のコンテナを開けない権限でも、パーティションから探して読めるように</li>
+  <li><strong>RSAT と同じ欄：</strong><code>Get-ADDomainController</code>（接続先のドメインの DC だけを返す・IPv4Address・OperatingSystem など）、<code>Get-ADForest</code>（GlobalCatalogs・ApplicationPartitions）、サイトリンク・サブネット・接続の各欄、受信者の種類</li>
+  <li><strong>修正：</strong>GPO のリンク順が GPMC と逆だった、機能レベル 2025 の名前、NetBIOS 名の検索で特殊文字が効いてしまう、<code>\,</code> を含む名前、受理ドメインの種類、<code>-Server</code> を省いたときに既定の DC を見つけられない場合があった、検索の起点が無いときのエラーが読めなかった</li>
+  <li><strong>テスト：</strong>RSAT と並べて突き合わせる <code>forTest/Compare-ADSearchWithRsat.ps1</code> を追加。<code>forTest/test_all.ps1</code> は結果があるはずの項目が 0 件なら Warn を出す</li>
+</ul>
 <h3>1.4.1（2026-09-24）</h3>
 <p>1.4.0 のドキュメントとコードを突き合わせて見つかった不具合を修正しました。</p>
 <ul>
@@ -1383,10 +1475,9 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <hr>
 <p class="colophon">
-ADSearch v1.4.1 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+ADSearch v1.5.0 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 
 </main>
-<!-- Cloudflare Web Analytics（Cookie を使わないアクセス解析） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b79bf821e1fd4b6683866d493b1de426"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
