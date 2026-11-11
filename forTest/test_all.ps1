@@ -149,7 +149,8 @@ if (-not $SearchBase) {
         $SearchBase = [string]$Config.SearchBase
     }
     else {
-        throw "SearchBase を自動取得できませんでした。test_all.config.json の SearchBase に DN を指定してください。例: DC=example,DC=local"
+        $why = ($Results | Where-Object Result -eq 'Fail' | ForEach-Object { "$($_.Test): $($_.Detail)" }) -join "`n"
+        throw "SearchBase を自動取得できませんでした。test_all.config.json の SearchBase に DN を指定してください。例: DC=example,DC=local`n$why"
     }
 }
 
