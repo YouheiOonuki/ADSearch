@@ -199,7 +199,13 @@ function ADSI_DnsZoneSettings($PropertyBlobs) {
         $x = ADSI_ParseDnsProperty ([byte[]]$blob)
         if ($x) { $p[$x.Id] = $x.Data }
     }
-    $u32 = { param($id) if ($p.ContainsKey($id) -and $p[$id].Length -ge 4) { [BitConverter]::ToUInt32($p[$id], 0) } else { $null } }
+    # 値の長さは欄ごとに違う（ALLOW_UPDATE は 1 バイト、TYPE・間隔は 4 バイト。MS-DNSP 2.3.2.1.1）。
+    # 4 バイト以下の little-endian として読む（1 バイトでも 4 バイトでも同じ値になる）
+    $u32 = { param($id)
+        if (-not $p.ContainsKey($id) -or $p[$id].Length -lt 1) { return $null }
+        $d = $p[$id]; [uint32]$v = 0
+        for ($i = [Math]::Min(4, $d.Length) - 1; $i -ge 0; $i--) { $v = ($v -shl 8) -bor $d[$i] }
+        $v }
     $type   = & $u32 0x01
     $update = & $u32 0x02
     $noRef  = & $u32 0x10

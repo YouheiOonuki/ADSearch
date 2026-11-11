@@ -1,7 +1,7 @@
 {
     "Server":  "dc01.corp.local",
     "SampleUser":  "adsearch-ol",
-    "SampleGroup":  "ADSearch-OLGroup",
+    "SampleGroup":  "adsearch-olgrp",
     "SampleComputer":  "dc01",
     "UseSSLTest":  false,
     "UseCredentialTest":  false,

@@ -158,6 +158,11 @@ Write-Host '--- DNS: dnsProperty（ゾーンの設定）'
 $zs = { param($blobs) ADSI_DnsZoneSettings $blobs }
 $z = InModule $zs @(, @((Prop 1 (LE32 1)), (Prop 2 (LE32 2)), (Prop 0x40 (LE32 1)), (Prop 0x10 (LE32 168)), (Prop 0x20 (LE32 168))))
 Check 'Primary・Secure・エージング' "$($z.ZoneType) $($z.DynamicUpdate) $($z.Aging)" 'Primary Secure True'
+$z = InModule $zs @(, @((Prop 1 (LE32 1)), (Prop 2 ([byte[]]@(2))), (Prop 0x40 ([byte[]]@(0)))))
+Check 'ALLOW_UPDATE は 1 バイト（実機の形）' "$($z.DynamicUpdate) $($z.Aging)" 'Secure False'
+$z = InModule $zs @(, @((Prop 1 (LE32 1)), (Prop 2 ([byte[]]@(1)))))
+Check 'ALLOW_UPDATE 1 = NonsecureAndSecure' $z.DynamicUpdate 'NonsecureAndSecure'
+$z = InModule $zs @(, @((Prop 1 (LE32 1)), (Prop 0x40 (LE32 1)), (Prop 0x10 (LE32 168)), (Prop 0x20 (LE32 168))))
 Check 'NoRefresh/Refresh は時間'    "$($z.NoRefreshInterval.TotalDays)/$($z.RefreshInterval.TotalDays)" '7/7'
 $z = InModule $zs @(, @((Prop 1 (LE32 3)), (Prop 0x81 ((LE32 2) + [byte[]]@(10, 0, 0, 1) + [byte[]]@(10, 0, 0, 2)))))
 Check 'Stub と IP4_ARRAY の転送先'  "$($z.ZoneType) $($z.MasterServers -join ',')" 'Stub 10.0.0.1,10.0.0.2'
