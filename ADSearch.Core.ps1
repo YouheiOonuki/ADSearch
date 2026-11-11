@@ -293,7 +293,12 @@ function ADSI_DefaultServer {
     if ($env:USERDNSDOMAIN) { return $null }
     if ($null -eq $script:ADSI_ComputerDomain) {
         $script:ADSI_ComputerDomain = ''
-        try { $script:ADSI_ComputerDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain().Name } catch {}
+        # 参加しているドメインの名前はレジストリの設定から読む（DC に問い合わせない。systeminfo の Domain と同じ値）。
+        # GetComputerDomain() は DC に問い合わせるので、ローカルのアカウントの資格情報では失敗することがある（実機で確認、2026-11-11）
+        try { $script:ADSI_ComputerDomain = [string][System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().DomainName } catch {}
+        if (-not $script:ADSI_ComputerDomain) {
+            try { $script:ADSI_ComputerDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetComputerDomain().Name } catch {}
+        }
     }
     if ($script:ADSI_ComputerDomain) { return $script:ADSI_ComputerDomain }
     return $null
