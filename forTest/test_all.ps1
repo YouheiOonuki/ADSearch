@@ -93,7 +93,8 @@ $Results = New-Object System.Collections.Generic.List[object]
 function Invoke-ADSearchCommandTest {
     param(
         [string]$Name,
-        [scriptblock]$Script
+        [switch]$AllowEmpty,   # 環境によっては 0 件が正しい項目（Exchange なし・信頼なし・例外を期待する等）
+        [Parameter(Position = 1)][scriptblock]$Script
     )
 
     try {
@@ -104,11 +105,13 @@ function Invoke-ADSearchCommandTest {
             $count = @($output).Count
         }
 
+        # 0 件は「落ちなかった」だけで値を確かめていない。サンプルの置き場所（SampleOU 等）を見直すための Warn
+        $empty = ($count -eq 0 -and -not $AllowEmpty)
         $script:Results.Add([pscustomobject]@{
             Test   = $Name
-            Result = 'Pass'
+            Result = if ($empty) { 'Warn' } else { 'Pass' }
             Count  = $count
-            Detail = ''
+            Detail = if ($empty) { '0 件（結果があるはずの項目。config のサンプルが SampleOU の下にあるか確認）' } else { '' }
         })
     }
     catch {
@@ -380,7 +383,7 @@ Invoke-ADSearchCommandTest 'Get-ADObject / Properties *' {
     }
 }
 
-Invoke-ADSearchCommandTest 'Get-ADObject / IncludeDeletedObjects' {
+Invoke-ADSearchCommandTest 'Get-ADObject / IncludeDeletedObjects' -AllowEmpty {
     Get-ADObject -LDAPFilter "(isDeleted=TRUE)" @Common -IncludeDeletedObjects -ResultSetSize $Cap | Select-Object -First 1
 }
 
@@ -473,11 +476,11 @@ Invoke-ADSearchCommandTest 'Get-ADDefaultDomainPasswordPolicy' {
 # Trust
 # ============================================================
 
-Invoke-ADSearchCommandTest 'Get-ADTrust / default' {
+Invoke-ADSearchCommandTest 'Get-ADTrust / default' -AllowEmpty {
     Get-ADTrust @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-ADTrust / Identity if exists' {
+Invoke-ADSearchCommandTest 'Get-ADTrust / Identity if exists' -AllowEmpty {
     $t = Get-ADTrust @Common | Select-Object -First 1
     if ($t) {
         Get-ADTrust -Identity $t.Name @Common | Select-Object -First 1
@@ -533,15 +536,15 @@ Invoke-ADSearchCommandTest 'Get-ADReplicationSubnet / Identity if exists' {
     }
 }
 
-Invoke-ADSearchCommandTest 'Get-ADReplicationConnection / default' {
+Invoke-ADSearchCommandTest 'Get-ADReplicationConnection / default' -AllowEmpty {
     Get-ADReplicationConnection @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-ADReplicationConnection / Filter' {
+Invoke-ADSearchCommandTest 'Get-ADReplicationConnection / Filter' -AllowEmpty {
     Get-ADReplicationConnection -Filter "Name -like '*'" @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-ADReplicationConnection / Identity if exists' {
+Invoke-ADSearchCommandTest 'Get-ADReplicationConnection / Identity if exists' -AllowEmpty {
     $x = Get-ADReplicationConnection @Common | Select-Object -First 1
     if ($x) {
         Get-ADReplicationConnection -Identity $x.Name @Common | Select-Object -First 1
@@ -675,7 +678,7 @@ Invoke-ADSearchCommandTest 'Get-DnsServerResourceRecord / _msdcs の SRV' {
     $srv | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-DnsServerResourceRecord / 無いゾーンは例外' {
+Invoke-ADSearchCommandTest 'Get-DnsServerResourceRecord / 無いゾーンは例外' -AllowEmpty {
     $threw = $false
     try { Get-DnsServerResourceRecord -ZoneName 'zz-nonexistent.invalid' -ComputerName $Server | Out-Null } catch { $threw = $true }
     if (-not $threw) { throw '例外が発生しませんでした' }
@@ -712,35 +715,35 @@ Invoke-ADSearchCommandTest 'Get-ADGroupMember / Recursive + Timeout' {
 # Exchange 構成（未導入環境では 0 件・警告で Pass）
 # ============================================================
 
-Invoke-ADSearchCommandTest 'Get-ExchangeServer' {
+Invoke-ADSearchCommandTest 'Get-ExchangeServer' -AllowEmpty {
     Get-ExchangeServer @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-ReceiveConnector' {
+Invoke-ADSearchCommandTest 'Get-ReceiveConnector' -AllowEmpty {
     Get-ReceiveConnector @Common | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-SendConnector' {
+Invoke-ADSearchCommandTest 'Get-SendConnector' -AllowEmpty {
     Get-SendConnector @Common | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-AcceptedDomain' {
+Invoke-ADSearchCommandTest 'Get-AcceptedDomain' -AllowEmpty {
     Get-AcceptedDomain @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-RemoteDomain' {
+Invoke-ADSearchCommandTest 'Get-RemoteDomain' -AllowEmpty {
     Get-RemoteDomain @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-TransportRule' {
+Invoke-ADSearchCommandTest 'Get-TransportRule' -AllowEmpty {
     Get-TransportRule @Common | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-MailboxDatabase' {
+Invoke-ADSearchCommandTest 'Get-MailboxDatabase' -AllowEmpty {
     Get-MailboxDatabase @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-DatabaseAvailabilityGroup' {
+Invoke-ADSearchCommandTest 'Get-DatabaseAvailabilityGroup' -AllowEmpty {
     Get-DatabaseAvailabilityGroup @Common
 }
 
@@ -748,19 +751,19 @@ Invoke-ADSearchCommandTest 'Get-DatabaseAvailabilityGroup' {
 # Exchange 構成パーティション追加コマンド（v1.2、未導入環境は 0 件・警告で Pass）
 # ============================================================
 
-Invoke-ADSearchCommandTest 'Get-AddressList' {
+Invoke-ADSearchCommandTest 'Get-AddressList' -AllowEmpty {
     Get-AddressList @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-GlobalAddressList' {
+Invoke-ADSearchCommandTest 'Get-GlobalAddressList' -AllowEmpty {
     Get-GlobalAddressList @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-OfflineAddressBook' {
+Invoke-ADSearchCommandTest 'Get-OfflineAddressBook' -AllowEmpty {
     Get-OfflineAddressBook @Common
 }
 
-Invoke-ADSearchCommandTest 'Get-EmailAddressPolicy' {
+Invoke-ADSearchCommandTest 'Get-EmailAddressPolicy' -AllowEmpty {
     Get-EmailAddressPolicy @Common
 }
 
@@ -769,67 +772,67 @@ Invoke-ADSearchCommandTest 'Get-EmailAddressPolicy' {
 # Exchange 未導入 or 受信者なし環境では 0 件で Pass
 # ============================================================
 
-Invoke-ADSearchCommandTest 'Get-Recipient / no filter' {
+Invoke-ADSearchCommandTest 'Get-Recipient / no filter' -AllowEmpty {
     Get-Recipient @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-Recipient / Identity' {
+Invoke-ADSearchCommandTest 'Get-Recipient / Identity' -AllowEmpty {
     Get-Recipient -Identity $SampleUser @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-Recipient / Filter' {
+Invoke-ADSearchCommandTest 'Get-Recipient / Filter' -AllowEmpty {
     Get-Recipient -Filter "Name -like '*'" @Common -ResultSetSize $Cap | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-Recipient / LDAPFilter' {
+Invoke-ADSearchCommandTest 'Get-Recipient / LDAPFilter' -AllowEmpty {
     Get-Recipient -LDAPFilter '(mailNickname=*)' @Common -ResultSetSize $Cap | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-Mailbox / no filter' {
+Invoke-ADSearchCommandTest 'Get-Mailbox / no filter' -AllowEmpty {
     Get-Mailbox @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-Mailbox / Identity' {
+Invoke-ADSearchCommandTest 'Get-Mailbox / Identity' -AllowEmpty {
     Get-Mailbox -Identity $SampleUser @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-Mailbox / Filter' {
+Invoke-ADSearchCommandTest 'Get-Mailbox / Filter' -AllowEmpty {
     Get-Mailbox -Filter "Name -like '*'" @Common -ResultSetSize $Cap | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-RemoteMailbox / no filter' {
+Invoke-ADSearchCommandTest 'Get-RemoteMailbox / no filter' -AllowEmpty {
     Get-RemoteMailbox @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-RemoteMailbox / Identity' {
+Invoke-ADSearchCommandTest 'Get-RemoteMailbox / Identity' -AllowEmpty {
     Get-RemoteMailbox -Identity $SampleUser @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-MailUser / no filter' {
+Invoke-ADSearchCommandTest 'Get-MailUser / no filter' -AllowEmpty {
     Get-MailUser @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-MailContact / no filter' {
+Invoke-ADSearchCommandTest 'Get-MailContact / no filter' -AllowEmpty {
     Get-MailContact @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-DistributionGroup / no filter' {
+Invoke-ADSearchCommandTest 'Get-DistributionGroup / no filter' -AllowEmpty {
     Get-DistributionGroup @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-DistributionGroup / Identity' {
+Invoke-ADSearchCommandTest 'Get-DistributionGroup / Identity' -AllowEmpty {
     Get-DistributionGroup -Identity $SampleGroup @Common | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-DistributionGroup / Filter' {
+Invoke-ADSearchCommandTest 'Get-DistributionGroup / Filter' -AllowEmpty {
     Get-DistributionGroup -Filter "Name -like '*'" @Common -ResultSetSize $Cap | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-DynamicDistributionGroup / no filter' {
+Invoke-ADSearchCommandTest 'Get-DynamicDistributionGroup / no filter' -AllowEmpty {
     Get-DynamicDistributionGroup @Common -ResultSetSize $Cap | Select-Object -First 5
 }
 
-Invoke-ADSearchCommandTest 'Get-DistributionGroupMember / SampleGroup' {
+Invoke-ADSearchCommandTest 'Get-DistributionGroupMember / SampleGroup' -AllowEmpty {
     # SampleGroup がメール対応グループでない場合は空を返して Pass
     $g = Get-DistributionGroup -Identity $SampleGroup @Common | Select-Object -First 1
     if ($g) {
@@ -869,15 +872,15 @@ Invoke-ADSearchCommandTest 'Get-ADUserHealth / Recursive' {
 # v1.3 追加: Search-ADAccount / Get-ADComputerHealth / primaryGroupID / 例外系
 # ============================================================
 
-Invoke-ADSearchCommandTest 'Search-ADAccount / AccountInactive DaysInactive UsersOnly' {
+Invoke-ADSearchCommandTest 'Search-ADAccount / AccountInactive DaysInactive UsersOnly' -AllowEmpty {
     Search-ADAccount -AccountInactive -DaysInactive 90 -UsersOnly @Common -SearchBase $TestBase -ResultSetSize $Cap
 }
 
-Invoke-ADSearchCommandTest 'Search-ADAccount / LockedOut' {
+Invoke-ADSearchCommandTest 'Search-ADAccount / LockedOut' -AllowEmpty {
     Search-ADAccount -LockedOut @Common -SearchBase $TestBase -ResultSetSize $Cap
 }
 
-Invoke-ADSearchCommandTest 'Search-ADAccount / AccountDisabled' {
+Invoke-ADSearchCommandTest 'Search-ADAccount / AccountDisabled' -AllowEmpty {
     Search-ADAccount -AccountDisabled @Common -SearchBase $TestBase -ResultSetSize $Cap
 }
 
@@ -892,12 +895,12 @@ Invoke-ADSearchCommandTest 'Get-ADComputerHealth / Identity' {
     $h
 }
 
-Invoke-ADSearchCommandTest 'Get-ADUser / Filter PasswordLastSet -le 過去日' {
+Invoke-ADSearchCommandTest 'Get-ADUser / Filter PasswordLastSet -le 過去日' -AllowEmpty {
     $pastDate = (Get-Date).AddYears(-1).ToString('yyyy-MM-dd')
     Get-ADUser -Filter "PasswordLastSet -le '$pastDate'" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
 }
 
-Invoke-ADSearchCommandTest 'Get-ADUser / Filter LockedOut -eq $true 例外' {
+Invoke-ADSearchCommandTest 'Get-ADUser / Filter LockedOut -eq $true 例外' -AllowEmpty {
     $threw = $false
     try {
         Get-ADUser -Filter "LockedOut -eq `$true" @Common -SearchBase $TestBase -ResultSetSize $Cap | Out-Null
@@ -914,7 +917,7 @@ Invoke-ADSearchCommandTest 'Get-ADGroupMember / Domain Users primaryGroupID' {
     $members
 }
 
-Invoke-ADSearchCommandTest 'Get-ADUser / Identity 存在しないSAM 例外' {
+Invoke-ADSearchCommandTest 'Get-ADUser / Identity 存在しないSAM 例外' -AllowEmpty {
     $target = $SampleInvalidUser
     if ([string]::IsNullOrWhiteSpace($target)) { $target = 'zz-nonexistent-sam-99999' }
     $threw = $false
@@ -940,6 +943,11 @@ $Results |
 "`n==== Failed ===="
 $Results |
     Where-Object Result -eq 'Fail' |
+    Format-Table Test, Detail -AutoSize -Wrap
+
+"`n==== Warn（0 件） ===="
+$Results |
+    Where-Object Result -eq 'Warn' |
     Format-Table Test, Detail -AutoSize -Wrap
 
 "`n==== All Results ===="

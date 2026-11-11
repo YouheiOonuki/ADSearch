@@ -154,6 +154,31 @@ $r = InModule $parse @(, (Rec 0 0 0 ([byte[]]@(1, 2, 3, 4, 5, 6, 7, 8))))
 Check 'ZERO（消した印）'          $r.RecordType 'ZERO'
 Check '短すぎるバイト列は $null'   ($null -eq (InModule $parse @(, ([byte[]]@(1, 2, 3))))) $true
 
+Write-Host '--- DNS: 実機のバイト列（Windows Server 2022 の DC から Domain Users で読んだもの。期待値は同じ DC の RSAT の出力）'
+# 名前を含まないものだけを選んだ（AD の識別子を公開 repo に入れない）。IP は私用の範囲と公開のルートサーバー
+$real = {
+    $zs = @{
+        Secure = @('BAAAAAAAAAAAAAAAAQAAABIAAAAAAAAAAAAAAA==', 'AAAAAAAAAAAAAAAAAQAAAJIAAAAAAAAA', 'BAAAAAAAAAAAAAAAAQAAACAAAACoAAAAAAAAAA==',
+                   'BAAAAAAAAAAAAAAAAQAAABAAAACoAAAAAAAAAA==', 'AQAAAAAAAAAAAAAAAQAAAAIAAAACAAAAAA==', 'BAAAAAAAAAAAAAAAAQAAAAEAAAABAAAAAAAAAA==',
+                   'AAAAAAAAAAAAAAAAAQAAAJAAAAAAAAAA', 'BAAAAAAAAAAAAAAAAQAAAEAAAAAAAAAAAAAAAA==', 'CAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAA=')
+        # TrustAnchors: ALLOW_UPDATE は 1 バイトで、後ろに使われないバイトが続く
+        None   = @('BAAAAAAAAAAAAAAAAQAAABIAAAAAAAAAdQEAAA==', 'AAAAANd/re0AAAAAAQAAAJIAAABIDKUW', 'AAAAAAihR/4AAAAAAQAAAJAAAAC4oUf+',
+                   'BAAAAHUBAAAAAAAAAQAAACAAAACoAAAASAylFg==', 'BAAAAISMKqIAAAAAAQAAABAAAACoAAAAAAAAAA==', 'BAAAAP1/AAAAAAAAAQAAAEAAAAAAAAAAyAilFg==',
+                   'CAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAHUBAAA=', 'AQAAAAAAAAAAAAAAAQAAAAIAAAAALUUXdQ==', 'BAAAAHUBAAAAAAAAAQAAAAEAAAABAAAAAAClFg==')
+    }
+    $out = foreach ($k in 'Secure', 'None') {
+        $z = ADSI_DnsZoneSettings @($zs[$k] | ForEach-Object { , [Convert]::FromBase64String($_) })
+        "$($z.ZoneType) $($z.DynamicUpdate) $($z.Aging) $($z.NoRefreshInterval.TotalHours)"
+    }
+    [byte[]]$a = [Convert]::FromBase64String('BAABAAXwAAAUAAAAAAAEsAAAAACJ5jgACgAABQ==')       # 動的登録の A
+    [byte[]]$q = [Convert]::FromBase64String('EAAcAAUIAAAAAAAAAAAAAAAAAAAAAAAAIAENwwAAAAAAAAAAAAAANQ==')   # ルートヒントの AAAA
+    $ra = ADSI_ParseDnsRecord $a; $rq = ADSI_ParseDnsRecord $q
+    $out += "$($ra.RecordType) $($ra.Data) $($ra.TimeToLive.TotalSeconds) $(([datetime]$ra.Timestamp).ToUniversalTime().ToString('s'))"
+    $out += "$($rq.RecordType) $($rq.Data) $($rq.Timestamp)"
+    $out -join ' | '
+}
+Check 'ゾーン設定・A（TTL と時刻）・AAAA が RSAT と一致' (InModule $real) 'Primary Secure False 168 | Primary None False 168 | A 10.0.0.5 1200 2026-05-29T09:00:00 | AAAA 2001:dc3::35 '
+
 Write-Host '--- DNS: dnsProperty（ゾーンの設定）'
 $zs = { param($blobs) ADSI_DnsZoneSettings $blobs }
 $z = InModule $zs @(, @((Prop 1 (LE32 1)), (Prop 2 (LE32 2)), (Prop 0x40 (LE32 1)), (Prop 0x10 (LE32 168)), (Prop 0x20 (LE32 168))))
