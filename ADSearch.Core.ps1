@@ -367,8 +367,12 @@ function ADSI_GetNamingContexts {
 
 # bind/検索時の「オブジェクトが存在しない」エラー判定（ロケール非依存）。
 # 日本語/英語のメッセージ表現に加え、no-such-object の HRESULT 0x80072030 でも判定する。
+# HRESULT が付いていて 0x80072030 でなければ「無い」ではない。日本語の 0x8007200A
+#「指定されたディレクトリ サービス属性または値が存在しません」を「存在しません」で取り違えないため（職場の実機、2026-11-12）
 function ADSI_IsNoSuchObject([string]$message) {
     if ([string]::IsNullOrEmpty($message)) { return $false }
+    $hrs = [regex]::Matches($message, '0x8007[0-9A-Fa-f]{4}') | ForEach-Object { $_.Value.ToUpperInvariant() }
+    if ($hrs -and -not ($hrs -contains '0X80072030')) { return $false }
     return [bool](
         $message -match '0x80072030' -or
         $message -match '(?i)no such object' -or
