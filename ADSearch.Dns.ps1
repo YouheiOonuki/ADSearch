@@ -334,15 +334,19 @@ function ADSI_DnsSearchIn {
     $srv = ADSI_DnsServerFor $Plan $Server
     $conn = $null
     # 起点そのものを開けないとき（Domain Users は CN=MicrosoftDNS コンテナの objectClass を読めず、ADSI が 0x8007200A で開けない。
-    # 中のゾーン・レコードは読める。実機で確認、2026-11-11）は、パーティションの根元から探し、DN が起点の下にあるものだけを残す
+    # ACL によっては同じ状況が「そのようなオブジェクトはありません」0x80072030 で返る。どちらも中のゾーン・レコードは読める。
+    # 実機で確認、2026-11-11・11-12）は、パーティションの根元から探し、DN が起点の下にあるものだけを残す。
+    # 本当に無い置き場は、根元から探して 0 件なので $null になる（下の「1 件も無ければ」）
     $within = $null
     try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Base }
     catch {
+        $noSuch = ADSI_IsNoSuchObject $_.Exception.Message
         # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
-        if (ADSI_IsNoSuchObject $_.Exception.Message) { return $null }
-        if ($_.Exception.Message -match '0x8007200A' -and $Plan.NCName) {
+        if ($noSuch -and -not $Plan.NCName) { return $null }
+        if (($noSuch -or $_.Exception.Message -match '0x8007200A') -and $Plan.NCName) {
             try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Plan.NCName }
             catch {
+                if (ADSI_IsNoSuchObject $_.Exception.Message) { return $null }   # パーティションごと無い
                 Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
                 return $null
             }
