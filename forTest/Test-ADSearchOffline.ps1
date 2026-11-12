@@ -245,6 +245,13 @@ $fallback = {
     "$script:FbRoot|$script:FbScope|$(($z | ForEach-Object { $_['name'][0] }) -join ',')|$(($r | ForEach-Object { $_['name'][0] }) -join ',')|$($null -eq $n)"
 }
 Check 'コンテナの直下（ゾーン）とゾーンの下（レコード）だけを残す、無いゾーンは $null' (InModule $fallback) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
+# 日本語の Windows の 0x8007200A は「…属性または値が存在しません」。「無い」と取り違えず根元から探す（職場の実機、2026-11-12）
+$fallbackJa = [scriptblock]::Create($fallback.ToString().Replace("(0x8007200A): The specified directory service attribute or value does not exist.", "(0x8007200A): AuthenticationType の取得中に次の例外が発生しました: 指定されたディレクトリ サービス属性または値が存在しません。"))
+Check '日本語の 0x8007200A でもパーティションの根元から探す' (InModule $fallbackJa) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
+$nso = { param($m) ADSI_IsNoSuchObject $m }
+Check '無い: 0x80072030（日本語）'   (InModule $nso @('検索の起点が見つかりません (0x80072030): サーバーにそのようなオブジェクトはありません。')) 'True'
+Check '無いではない: 日本語の 0x8007200A' (InModule $nso @('New-ADSConnection に失敗しました (0x8007200A): 指定されたディレクトリ サービス属性または値が存在しません。')) 'False'
+Check '無い: HRESULT の無い日本語の文' (InModule $nso @('オブジェクトが存在しません')) 'True'
 # ACL によっては同じ状況が 0x80072030（そのようなオブジェクトはありません）で返る（実機で確認、2026-11-12）。黙って 0 件にしない
 $fallbackNoSuch = [scriptblock]::Create($fallback.ToString().Replace("(0x8007200A): The specified directory service attribute or value does not exist.", "(0x80072030): そのようなオブジェクトはありません。"))
 Check '0x80072030 でもパーティションの根元から探す' (InModule $fallbackNoSuch) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
