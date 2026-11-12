@@ -223,7 +223,7 @@ pre code { overflow-wrap: normal; }
 <main>
 
 <h1>ADSearch リファレンスマニュアル</h1>
-<p class="subtitle">Version 1.5.4 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+<p class="subtitle">Version 1.5.5 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
@@ -1427,6 +1427,10 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <!-- ========================================================== -->
 <h2 id="changelog">変更履歴</h2>
+<h3>1.5.5（2026-11-12）</h3>
+<ul>
+  <li><strong>エラーの見分け方：</strong>エラーの文の言葉を見るのを全部やめ、例外の型と HRESULT だけで決めるように。OS の言語が何でも同じに動きます。ADSearch がエラーを投げ直すときは元の例外を中に残し、「見つからない」は <code>ItemNotFoundException</code> で投げます（文の中身は変わりません）</li>
+</ul>
 <h3>1.5.4（2026-11-12）</h3>
 <p>日本語の Windows で動かす前提で、全体を見直しました。</p>
 <ul>
@@ -1495,7 +1499,7 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <hr>
 <p class="colophon">
-ADSearch v1.5.4 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+ADSearch v1.5.5 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 
 </main>

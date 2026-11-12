@@ -27,7 +27,7 @@
                     -Properties $Properties -Filter $f `
                     -DefaultProps $script:ADSI_DefaultProperties.User `
                     -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity 'Get-ADUser')
-            if ($r.Count -eq 0) { throw "オブジェクトが見つかりません (Identity='$Identity')" }
+            if ($r.Count -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("オブジェクトが見つかりません (Identity='$Identity')") }
             $r
         }
         else {
@@ -70,7 +70,7 @@ function Get-ADGroup {
                     -Properties $Properties -Filter $f `
                     -DefaultProps $script:ADSI_DefaultProperties.Group `
                     -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity 'Get-ADGroup')
-            if ($r.Count -eq 0) { throw "オブジェクトが見つかりません (Identity='$Identity')" }
+            if ($r.Count -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("オブジェクトが見つかりません (Identity='$Identity')") }
             $r
         }
         else {
@@ -113,7 +113,7 @@ function Get-ADComputer {
                     -Properties $Properties -Filter $f `
                     -DefaultProps $script:ADSI_DefaultProperties.Computer `
                     -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity 'Get-ADComputer')
-            if ($r.Count -eq 0) { throw "オブジェクトが見つかりません (Identity='$Identity')" }
+            if ($r.Count -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("オブジェクトが見つかりません (Identity='$Identity')") }
             $r
         }
         else {
@@ -149,7 +149,7 @@ function Get-ADOrganizationalUnit {
                     -SearchBase $SearchBase -Properties $Properties -Filter $f `
                     -DefaultProps $script:ADSI_DefaultProperties.OU `
                     -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity 'Get-ADOrganizationalUnit')
-            if ($r.Count -eq 0) { throw "オブジェクトが見つかりません (Identity='$Identity')" }
+            if ($r.Count -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("オブジェクトが見つかりません (Identity='$Identity')") }
             $r
         }
         else {
@@ -186,7 +186,7 @@ function Get-ADObject {
                     -DefaultProps $script:ADSI_DefaultProperties.Object `
                     -Tombstone:$IncludeDeletedObjects `
                     -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity 'Get-ADObject')
-            if ($r.Count -eq 0) { throw "オブジェクトが見つかりません (Identity='$Identity')" }
+            if ($r.Count -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("オブジェクトが見つかりません (Identity='$Identity')") }
             $r
         }
         else {
@@ -220,7 +220,7 @@ function Get-ADGroupMember {
         $g = Get-ADGroup -Identity $Identity -Server $Server -UseSSL:$UseSSL `
                 -Credential $Credential -SearchBase $SearchBase |
              Select-Object -First 1
-        if (-not $g) { throw "グループが見つかりません: $Identity" }
+        if (-not $g) { throw [System.Management.Automation.ItemNotFoundException]::new("グループが見つかりません: $Identity") }
 
         $nc   = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
         $base = if ($SearchBase) { $SearchBase } else { $nc.Default }
@@ -346,7 +346,7 @@ function Get-ADServiceAccount {
                     -SearchBase $SearchBase -SearchScope $SearchScope -Properties $Properties -Filter $f `
                     -DefaultProps $script:ADSI_DefaultProperties.ServiceAccount `
                     -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity 'Get-ADServiceAccount')
-            if ($r.Count -eq 0) { throw "オブジェクトが見つかりません (Identity='$Identity')" }
+            if ($r.Count -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("オブジェクトが見つかりません (Identity='$Identity')") }
             $r
         }
         else {

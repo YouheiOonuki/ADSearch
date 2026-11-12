@@ -828,7 +828,7 @@ function Get-DistributionGroupMember {
             -SearchBase $SearchBase -ProgressActivity 'Get-DistributionGroupMember (グループ解決中)' |
             Select-Object -First 1
 
-        if (-not $grp) { throw "配布グループが見つかりません: $Identity" }
+        if (-not $grp) { throw [System.Management.Automation.ItemNotFoundException]::new("配布グループが見つかりません: $Identity") }
 
         $nc   = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
         $base = if ($SearchBase) { $SearchBase } else { $nc.Default }

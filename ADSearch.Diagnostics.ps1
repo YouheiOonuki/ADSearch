@@ -86,7 +86,7 @@ function Get-ADUserHealth {
         }
 
         if (-not $user) {
-            throw "ユーザーが見つかりません: $Identity"
+            throw [System.Management.Automation.ItemNotFoundException]::new("ユーザーが見つかりません: $Identity")
         }
 
         # ---- 2. メールセクション ----
@@ -391,9 +391,8 @@ function Get-ADComputerHealth {
         catch {
             # 「見つからない」場合のみ $ 付き sAMAccountName で再試行する。
             # 認証/接続エラー等はそのまま送出して真因を隠さない。
-            # Get-ADComputer が投げる「オブジェクトが見つかりません (Identity=…)」か no-such-object のときだけ。
-            # 「見つかりません」だけで見ると、OS の文（「ドメイン コントローラーが見つかりません」など）まで拾う
-            $notFound = ($_.Exception.Message -match 'オブジェクトが見つかりません \(Identity=') -or (ADSI_IsNoSuchObject $_)
+            # 「見つからない」は文でなく型で見る（Get-ADComputer の ItemNotFoundException か no-such-object）
+            $notFound = ADSI_IsNotFound $_
             if ($notFound -and -not $Identity.EndsWith('$')) {
                 $computer = Get-ADComputer -Identity "$Identity`$" @getParams | Select-Object -First 1
             }
@@ -403,7 +402,7 @@ function Get-ADComputerHealth {
         }
 
         if (-not $computer) {
-            throw "コンピュータが見つかりません: $Identity"
+            throw [System.Management.Automation.ItemNotFoundException]::new("コンピュータが見つかりません: $Identity")
         }
 
         # ---- 2. グループ所属 ----
