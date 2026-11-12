@@ -84,7 +84,7 @@ function Get-ADUserHealth {
                         -Properties $props -Timeout $Timeout |
                     Select-Object -First 1
         }
-
+        # -Identity で無ければ Get-ADUser が ItemNotFoundException を投げる。-UserPrincipalName で無いときはここ
         if (-not $user) {
             throw [System.Management.Automation.ItemNotFoundException]::new("ユーザーが見つかりません: $Identity")
         }
@@ -384,26 +384,8 @@ function Get-ADComputerHealth {
             Timeout    = $Timeout
         }
 
-        $computer = $null
-        try {
-            $computer = Get-ADComputer -Identity $Identity @getParams | Select-Object -First 1
-        }
-        catch {
-            # 「見つからない」場合のみ $ 付き sAMAccountName で再試行する。
-            # 認証/接続エラー等はそのまま送出して真因を隠さない。
-            # 「見つからない」は文でなく型で見る（Get-ADComputer の ItemNotFoundException か no-such-object）
-            $notFound = ADSI_IsNotFound $_
-            if ($notFound -and -not $Identity.EndsWith('$')) {
-                $computer = Get-ADComputer -Identity "$Identity`$" @getParams | Select-Object -First 1
-            }
-            else {
-                throw
-            }
-        }
-
-        if (-not $computer) {
-            throw [System.Management.Automation.ItemNotFoundException]::new("コンピュータが見つかりません: $Identity")
-        }
+        # Get-ADComputer は -Identity の x と x$ を 1 回で探し、無ければ ItemNotFoundException を投げる
+        $computer = Get-ADComputer -Identity $Identity @getParams | Select-Object -First 1
 
         # ---- 2. グループ所属 ----
         # 直接所属のみ: memberOf の各 DN から葉 CN を抽出（Get-ADUserHealth の非再帰パスと同実装）

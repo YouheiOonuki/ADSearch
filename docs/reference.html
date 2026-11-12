@@ -223,7 +223,7 @@ pre code { overflow-wrap: normal; }
 <main>
 
 <h1>ADSearch リファレンスマニュアル</h1>
-<p class="subtitle">Version 1.5.5 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+<p class="subtitle">Version 1.5.6 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
@@ -1427,6 +1427,16 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <!-- ========================================================== -->
 <h2 id="changelog">変更履歴</h2>
+<h3>1.5.6（2026-11-12）</h3>
+<p>別のモデルによる全体のレビューを受けて直しました。</p>
+<ul>
+  <li><strong>Get-DnsServerResourceRecord・Get-ADDnsRecord：</strong>一般ユーザーで <code>-Name</code> に当たるレコードが無いとき、ゾーンはあるのに「ゾーンが見つかりません」になっていたのを直しました。ゾーンの有無は先にゾーンを探して決めます。無いゾーンのためにパーティション全体のレコードを読むこともなくなりました</li>
+  <li><strong>エラーの文：</strong>同じ文が何度も並んでいたのを直しました（1.5.5 から）。「見つからない」は外からも <code>catch [System.Management.Automation.ItemNotFoundException]</code> で受けられます。RootDSE を読めないときもエラー番号が残ります</li>
+  <li><strong>日時：</strong><code>Created</code>・<code>Modified</code>、<code>-Properties whenCreated</code> などの日時の属性、DNS の <code>WhenCreated</code>・<code>WhenChanged</code> を、RSAT と同じローカル時刻で返すように（これまでは UTC で、日本では 9 時間前に見えていた）。和暦の表示設定の端末でも <code>-Filter</code> の日時を西暦で送ります</li>
+  <li><strong>Get-ADDomain・Get-ADForest・Get-ADDomainController：</strong>取れなかった欄の理由を <code>-Verbose</code> にエラー番号つきで出すように。DNS の <code>-Verbose</code> は、探す置き場の数も出します</li>
+  <li><strong>Get-ADComputerHealth：</strong>効いていなかった <code>$</code> 付きの探し直しを外しました（<code>Get-ADComputer</code> が初めから両方を探す）。結果は変わりません</li>
+  <li><strong>Get-ADDefaultDomainPasswordPolicy：</strong>属性を読めないときに、原因の分からないエラーになっていたのを直しました</li>
+</ul>
 <h3>1.5.5（2026-11-12）</h3>
 <ul>
   <li><strong>エラーの見分け方：</strong>エラーの文の言葉を見るのを全部やめ、例外の型と HRESULT だけで決めるように。OS の言語が何でも同じに動きます。ADSearch がエラーを投げ直すときは元の例外を中に残し、「見つからない」は <code>ItemNotFoundException</code> で投げます（文の中身は変わりません）</li>
@@ -1499,7 +1509,7 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <hr>
 <p class="colophon">
-ADSearch v1.5.5 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+ADSearch v1.5.6 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 
 </main>

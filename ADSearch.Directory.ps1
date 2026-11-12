@@ -20,7 +20,7 @@ function ADSI_FsmoOwnerHost($fsmoDN, $Server, [switch]$UseSSL, [pscredential]$Cr
         }
         finally { $c.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
     $null
 }
 
@@ -82,7 +82,7 @@ function Get-ADDomain {
         }
         finally { $cPart.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     # DomainMode: ms-DS-Behavior-Version on domain NC（ドメイン機能レベル）
     $domainMode = $null
@@ -101,7 +101,7 @@ function Get-ADDomain {
                 if ($dp.Contains('objectsid') -and $dp['objectsid'].Count) { $sidRaw = $dp['objectsid'][0] }
                 $domainSID = $null
                 if ($sidRaw) {
-                    try { $domainSID = (New-Object Security.Principal.SecurityIdentifier ([byte[]]$sidRaw), 0).Value } catch {}
+                    try { $domainSID = (New-Object Security.Principal.SecurityIdentifier ([byte[]]$sidRaw), 0).Value } catch { ADSI_VerboseSwallowed $_ }
                 }
 
                 # PDCEmulator: domain NC の fSMORoleOwner
@@ -110,7 +110,7 @@ function Get-ADDomain {
         }
         finally { $cDom.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     # RIDMaster / InfrastructureMaster: 各システムオブジェクトの fSMORoleOwner
     $ridFsmo  = $null
@@ -123,7 +123,7 @@ function Get-ADDomain {
         }
         finally { $cRid.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
     try {
         $cInfra = New-ADSConnection -Server $Server -UseSSL:$UseSSL -Credential $Credential -Path "CN=Infrastructure,$($nc.Default)"
         try {
@@ -132,7 +132,7 @@ function Get-ADDomain {
         }
         finally { $cInfra.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     [pscustomobject]@{
         DNSRoot              = ADSI_DnToDns $nc.Default
@@ -170,7 +170,7 @@ function Get-ADForest {
         }
         finally { $cSch.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     # DomainNamingMaster: CN=Partitions,<Config> の fSMORoleOwner
     $namingFsmo = $null
@@ -182,7 +182,7 @@ function Get-ADForest {
         }
         finally { $cNam.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     # Domains: Partitions 内の crossRef オブジェクトで nETBIOSName が存在するもの → ドメイン NC → DNS 名
     # systemFlags で ADS_SYSTEMFLAG_CR_NTDS_DOMAIN(0x2) が立っているものが正確だが
@@ -224,7 +224,7 @@ function Get-ADForest {
         }
         finally { $cPart.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     # Sites: CN=Sites,<Config> の直下の objectClass=site オブジェクトの CN
     try {
@@ -263,7 +263,7 @@ function Get-ADForest {
         }
         finally { $cSites.Dispose() }
     }
-    catch {}
+    catch { ADSI_VerboseSwallowed $_ }
 
     [pscustomobject]@{
         Name                 = ADSI_DnToDns $nc.Root
@@ -345,7 +345,7 @@ function Get-ADDomainController {
                     }
                     finally { $cSrv.Dispose() }
                 }
-                catch {}
+                catch { ADSI_VerboseSwallowed $_ }
                 # OperatingSystem はコンピューターオブジェクト（ドメイン NC）にある。接続先のドメインの DC だけ読む（ほかのドメインは後で落とす）
                 if ($ref -and $dcDomain -ieq (ADSI_DnToDns $nc.Default)) {
                     try {
@@ -356,7 +356,7 @@ function Get-ADDomainController {
                         }
                         finally { $cCmp.Dispose() }
                     }
-                    catch {}
+                    catch { ADSI_VerboseSwallowed $_ }
                 }
                 # serverReference が読めないときはホスト名のドメイン部分で判定する
                 if (-not $dcDomain -and $hostName -and $hostName.Contains('.')) { $dcDomain = $hostName.Substring($hostName.IndexOf('.') + 1) }
@@ -420,6 +420,7 @@ function Get-ADDefaultDomainPasswordPolicy {
         $attrs = @('minPwdLength','maxPwdAge','minPwdAge','pwdHistoryLength',
                    'lockoutThreshold','lockoutDuration','lockOutObservationWindow','pwdProperties')
         $p = ADSI_GetAttrs $c $nc.Default $attrs
+        if (-not $p) { throw [System.Management.Automation.ItemNotFoundException]::new("ドメインのパスワード ポリシーの属性を読めません: $($nc.Default)") }
         # pwdProperties ビットフィールド（MS Learn: Pwd-Properties 属性で確認済み）
         # DOMAIN_PASSWORD_COMPLEX=1, DOMAIN_PASSWORD_STORE_CLEARTEXT=16
         $pwdProp = ADSI_ToInt64(ADSI_FirstVal $p 'pwdProperties')

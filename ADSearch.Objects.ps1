@@ -219,8 +219,7 @@ function Get-ADGroupMember {
         # 対象グループを特定（DN を得る）
         $g = Get-ADGroup -Identity $Identity -Server $Server -UseSSL:$UseSSL `
                 -Credential $Credential -SearchBase $SearchBase |
-             Select-Object -First 1
-        if (-not $g) { throw [System.Management.Automation.ItemNotFoundException]::new("グループが見つかりません: $Identity") }
+             Select-Object -First 1   # 無ければ Get-ADGroup が ItemNotFoundException を投げる
 
         $nc   = ADSI_GetNamingContexts -Server $Server -UseSSL:$UseSSL -Credential $Credential
         $base = if ($SearchBase) { $SearchBase } else { $nc.Default }
