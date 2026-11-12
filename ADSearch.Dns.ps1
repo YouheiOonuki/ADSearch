@@ -313,7 +313,9 @@ function ADSI_DnsContainers {
     finally { $conn.Dispose() }
     # 接続先の DC（RootDSE の dnsHostName）を各置き場に持たせる。-Server を省いたとき、DN だけの serverless では
     # DomainDnsZones などが 0x8007200A で開けない（実機で確認、2026-11-11）ので、いまのドメインの置き場はこの DC で開く
-    foreach ($p in (ADSI_DnsContainerPlan -CrossRefs $refs -DomainNC $nc.Default -RootNC $nc.Root -Scope $Scope -Partition $Partition)) {
+    $plans = @(ADSI_DnsContainerPlan -CrossRefs $refs -DomainNC $nc.Default -RootNC $nc.Root -Scope $Scope -Partition $Partition)
+    Write-Verbose "DNS: crossRef $($refs.Count) 件から置き場 $($plans.Count) 個（$((@($plans | ForEach-Object { $_.Scope })) -join ', ')）。DC=$($nc.DnsHostName)"
+    foreach ($p in $plans) {
         $p.DcHost = $nc.DnsHostName
         $p
     }
@@ -343,7 +345,7 @@ function ADSI_DnsSearchIn {
     catch {
         Write-Verbose "DNS: 起点を開けない: $($_.Exception.Message)"
         $noSuch = ADSI_IsNoSuchObject $_
-        # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
+        # 根元から探せない置き場（NCName が無い・パーティションごと無い）は $null
         if ($noSuch -and -not $Plan.NCName) { return $null }
         if (($noSuch -or (ADSI_HResultOf $_) -eq 0x8007200AL) -and $Plan.NCName) {
             try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Plan.NCName }
@@ -391,8 +393,7 @@ function ADSI_DnsSearchIn {
         finally { if ($res) { $res.Dispose() }; $s.Dispose() }
     }
     finally { $conn.Dispose() }
-    # 根元から探して 1 件も無ければ、起点（ゾーン）は無いものとみなす（ゾーンは必ず @ のノードを持つ）
-    if ($within -and $rows.Count -eq 0) { return $null }
+    # 0 件でも空の並びで返す。ゾーンの有無はここで決めない（名前で絞った 0 件と区別できないため）。呼ぶ側が dnsZone を先に探す
     return , $rows
 }
 
@@ -468,8 +469,8 @@ function Get-DnsServerZone {
                     MasterServers          = $set.MasterServers
                     ScavengeServers        = $set.ScavengeServers
                     DistinguishedName      = [string]$p['distinguishedname'][0]
-                    WhenCreated            = if ($p['whencreated'].Count) { $p['whencreated'][0] } else { $null }
-                    WhenChanged            = if ($p['whenchanged'].Count) { $p['whenchanged'][0] } else { $null }
+                    WhenCreated            = if ($p['whencreated'].Count) { ADSI_UtcToLocal $p['whencreated'][0] } else { $null }
+                    WhenChanged            = if ($p['whenchanged'].Count) { ADSI_UtcToLocal $p['whenchanged'][0] } else { $null }
                 }
             }
         }
@@ -495,16 +496,23 @@ function ADSI_DnsRecords {
     $types = $null
     if ($RRType) { $types = @($RRType | ForEach-Object { $_.ToUpperInvariant() }) }
 
+    $zoneRdn = if ($ZoneName) { if ($ZoneName -ieq 'TrustAnchors') { '..TrustAnchors' } else { $ZoneName } } else { $null }
     foreach ($plan in $plans) {
-        $zoneRdn = if ($ZoneName) { if ($ZoneName -ieq 'TrustAnchors') { '..TrustAnchors' } else { $ZoneName } } else { $null }
+        if ($zoneRdn) {
+            # ゾーンの有無は dnsZone を 1 回探して決める。無い置き場では dnsNode を探さない
+            # （置き場を開けず根元から探すとき、パーティション全体のレコードを引いてから捨てることになるため）
+            $z = ADSI_DnsSearchIn -Plan $plan -Server $Server -UseSSL:$UseSSL -Credential $Credential -Base $plan.Container `
+                -Filter "(&(objectClass=dnsZone)(name=$(ADSI_EscapeLdapValue $zoneRdn)))" -SearchScope OneLevel -Properties @('name')
+            if (-not $z -or $z.Count -eq 0) { continue }
+            if ($ZoneFound) { $ZoneFound.Value = $true }
+        }
         $base = if ($zoneRdn) { "DC=$(ADSI_DnsEscapeRdn $zoneRdn),$($plan.Container)" } else { $plan.Container }
         $rows = ADSI_DnsSearchIn -Plan $plan -Server $Server -UseSSL:$UseSSL -Credential $Credential -Base $base -Filter $filter `
             -SearchScope Subtree -Properties @('name', 'dnsRecord', 'distinguishedName', 'whenChanged')
-        if ($null -ne $rows -and $ZoneFound) { $ZoneFound.Value = $true }
         foreach ($p in $rows) {
             $dn = if ($p['distinguishedname'].Count) { [string]$p['distinguishedname'][0] } else { '' }
             $recName = if ($p['name'].Count) { [string]$p['name'][0] } else { '' }
-            $when = if ($p['whenchanged'].Count) { $p['whenchanged'][0] } else { $null }
+            $when = if ($p['whenchanged'].Count) { ADSI_UtcToLocal $p['whenchanged'][0] } else { $null }
             $zone = ADSI_DnsZoneDisplayName (ADSI_DnsZoneFromDN $dn)
             # dnsRecord はインデックスで 1 つずつ取る（@() で包むと byte[] がバイトに分かれる）
             $col = $p['dnsrecord']

@@ -275,8 +275,18 @@ function ADSI_ReadConverted($p, [string]$n, [string]$kind = 'auto') {
         guid    { try { New-Object Guid (,[byte[]]$v[0]) } catch { $null } }
         # RSAT と同型（SecurityIdentifier オブジェクト）で返す
         sid     { try { New-Object Security.Principal.SecurityIdentifier ([byte[]]$v[0]), 0 } catch { $null } }
-        default { if ($v.Count -eq 1) { $v[0] } else { ,@($v) } }
+        default {
+            $v = @($v | ForEach-Object { ADSI_UtcToLocal $_ })
+            if ($v.Count -eq 1) { $v[0] } else { ,@($v) }
+        }
     }
+}
+
+# DirectorySearcher は日時の属性（whenCreated・whenChanged など GeneralizedTime）を UTC の値で返す（Kind は Utc か Unspecified）。
+# RSAT はローカル時刻で返すので合わせる。日時でない値はそのまま
+function ADSI_UtcToLocal($v) {
+    if ($v -isnot [DateTime] -or $v.Kind -eq [DateTimeKind]::Local) { return $v }
+    return [DateTime]::SpecifyKind($v, [DateTimeKind]::Utc).ToLocalTime()
 }
 
 function ADSI_GetAuthTypes([switch]$UseSSL) {
@@ -340,7 +350,9 @@ function ADSI_GetRootDSE {
         $d
     }
     catch {
-        throw "RootDSE取得に失敗しました (Path='$path'): $($_.Exception.Message)"
+        $hr = ADSI_HResultOf $_
+        $hrText = if ($null -ne $hr) { ' (0x{0:X8})' -f $hr } else { '' }
+        throw (New-Object System.Exception -ArgumentList "RootDSE取得に失敗しました (Path='$path')$($hrText): $($_.Exception.Message)", $_.Exception)
     }
 }
 
@@ -377,6 +389,15 @@ function ADSI_HResultOf($err) {
         if ($e -is [System.Runtime.InteropServices.COMException]) { return [uint32]($e.HResult -band 0xffffffffL) }
     }
     return $null
+}
+
+# 取れなくても続ける欄（Get-ADDomain などの catch）で、捨てたエラーを -Verbose に出す（黙って空にしない）
+function ADSI_VerboseSwallowed($err) {
+    $hr = ADSI_HResultOf $err
+    $hrText = if ($null -ne $hr) { '0x{0:X8} ' -f $hr } else { '' }
+    $line = if ($err -is [System.Management.Automation.ErrorRecord] -and $err.InvocationInfo) { " (行 $($err.InvocationInfo.ScriptLineNumber))" } else { '' }
+    $msg = if ($err -is [System.Management.Automation.ErrorRecord]) { $err.Exception.Message } else { [string]$err }
+    Write-Verbose "取れなかった欄があります$($line): $hrText$msg"
 }
 
 # LDAP の no-such-object（0x80072030）か。PowerShell の 0x80072030 は負の Int32 なので L を付けて比べる
@@ -802,14 +823,14 @@ function ADSI_GetPrimaryGroupMembers {
     return ,$out.ToArray()
 }
 
+# 文は「Context | 直下の例外の文」だけ。内側の文は直下の例外がすでに含んでいる（New-ADSConnection・入れ子の ADSI_ThrowLdap）ので、
+# 連なりを歩いて足すと同じ文が何度も並ぶ。元の例外は InnerException に残す（呼ぶ側が型・HRESULT で見分けられるように）。
+# 連なりに ItemNotFoundException があれば、外側も同じ型で投げる（利用者が catch [ItemNotFoundException] で受けられるように）
 function ADSI_ThrowLdap($ErrorRecord, $Context) {
-    $p = @()
-    if ($Context) { $p += $Context }
-    $e = $ErrorRecord.Exception
-    while ($e) {
-        $p += $e.Message
-        $e  = $e.InnerException
+    $inner = $ErrorRecord.Exception
+    $msg = if ($Context) { "$Context | $($inner.Message)" } else { $inner.Message }
+    if (ADSI_IsNotFound $inner) {
+        throw (New-Object System.Management.Automation.ItemNotFoundException -ArgumentList $msg, $inner)
     }
-    # 元の例外を InnerException に残す（呼ぶ側が型・HRESULT で見分けられるように）
-    throw (New-Object System.Exception -ArgumentList ($p -join ' | '), $ErrorRecord.Exception)
+    throw (New-Object System.Exception -ArgumentList $msg, $inner)
 }

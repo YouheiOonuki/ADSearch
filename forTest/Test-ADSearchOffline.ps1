@@ -49,7 +49,7 @@ Check '括弧と -or の混在' (InModule $toLdap @('(Title -like ''*Manager*'' 
 
 # ------------------------------------------------------------
 Write-Host '--- -Filter の日時'
-$gt = { param($s) (ADSI_ParseFilterDate $s).ToString('yyyy-MM-dd HH:mm:ss') }
+$gt = { param($s) (ADSI_ParseFilterDate $s).ToString('yyyy-MM-dd HH:mm:ss', [Globalization.CultureInfo]::InvariantCulture) }
 Check '2026-01-05'          (InModule $gt @('2026-01-05'))          '2026-01-05 00:00:00'
 Check '2026/1/5（1 桁）'    (InModule $gt @('2026/1/5'))            '2026-01-05 00:00:00'
 Check '2026-1-5 9:05'       (InModule $gt @('2026-1-5 9:05'))       '2026-01-05 09:05:00'
@@ -126,7 +126,7 @@ Check 'A: TTL はビッグエンディアン' $r.TimeToLive.TotalSeconds 3600
 Check 'A: 静的（時刻 0）は Timestamp なし' ($null -eq $r.Timestamp) $true
 $h = [uint32]((([datetime]::new(2026, 1, 5, 9, 0, 0, [DateTimeKind]::Utc)) - [datetime]::new(1601, 1, 1, 0, 0, 0, [DateTimeKind]::Utc)).TotalHours)
 $r = InModule $parse @(, (Rec 1 1200 $h ([byte[]]@(10, 0, 0, 1))))
-Check 'A: 動的は 1601 年からの時間' $r.Timestamp.ToUniversalTime().ToString('yyyy-MM-dd HH:mm') '2026-01-05 09:00'
+Check 'A: 動的は 1601 年からの時間' $r.Timestamp.ToUniversalTime().ToString('yyyy-MM-dd HH:mm', [Globalization.CultureInfo]::InvariantCulture) '2026-01-05 09:00'
 $v6 = [System.Net.IPAddress]::Parse('2001:db8::1').GetAddressBytes()
 $r = InModule $parse @(, (Rec 28 3600 0 $v6))
 Check 'AAAA'                      $r.RecordData.IPv6Address '2001:db8::1'
@@ -242,15 +242,15 @@ $fallback = {
     $z = ADSI_DnsSearchIn -Plan $plan -Base $plan.Container -Filter '(objectClass=dnsZone)' -SearchScope OneLevel -Properties @('name')
     $r = ADSI_DnsSearchIn -Plan $plan -Base "DC=example.local,$($plan.Container)" -Filter '(objectClass=dnsNode)' -SearchScope Subtree -Properties @('name')
     $n = ADSI_DnsSearchIn -Plan $plan -Base "DC=nozone.local,$($plan.Container)" -Filter '(objectClass=dnsNode)' -SearchScope Subtree -Properties @('name')
-    "$script:FbRoot|$script:FbScope|$(($z | ForEach-Object { $_['name'][0] }) -join ',')|$(($r | ForEach-Object { $_['name'][0] }) -join ',')|$($null -eq $n)"
+    "$script:FbRoot|$script:FbScope|$(($z | ForEach-Object { $_['name'][0] }) -join ',')|$(($r | ForEach-Object { $_['name'][0] }) -join ',')|$($n.Count)"
 }
-Check 'コンテナの直下（ゾーン）とゾーンの下（レコード）だけを残す、無いゾーンは $null' (InModule $fallback) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
+Check 'コンテナの直下（ゾーン）とゾーンの下（レコード）だけを残す、無いゾーンは 0 件' (InModule $fallback) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|0'
 # 日本語の Windows の 0x8007200A は「…属性または値が存在しません」。文でなく番号で見るので、文が何語でも根元から探す（職場の実機、2026-11-12）
 $fallbackJa = [scriptblock]::Create($fallback.ToString().Replace("'The specified directory service attribute or value does not exist.'", "'指定されたディレクトリ サービス属性または値が存在しません。'"))
-Check '日本語の 0x8007200A でもパーティションの根元から探す' (InModule $fallbackJa) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
+Check '日本語の 0x8007200A でもパーティションの根元から探す' (InModule $fallbackJa) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|0'
 # ACL によっては同じ状況が 0x80072030 で返る。黙って 0 件にしない
 $fallbackNoSuch = [scriptblock]::Create($fallback.ToString().Replace('-2147016694', '-2147016656'))
-Check '0x80072030 でもパーティションの根元から探す' (InModule $fallbackNoSuch) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
+Check '0x80072030 でもパーティションの根元から探す' (InModule $fallbackNoSuch) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|0'
 
 Write-Host '--- エラーの見分け方: 文の言葉は見ず、型と HRESULT だけ'
 Check '無い: HResult 0x80072030（文は何語でも）' (InModule { ADSI_IsNoSuchObject (New-Object Runtime.InteropServices.COMException -ArgumentList '何かの文', -2147016656) }) 'True'
@@ -260,6 +260,20 @@ Check '無い: ErrorRecord でも' (InModule { try { throw (New-Object Runtime.I
 Check '投げ直しても番号が残る（ADSI_ThrowLdap を 2 回）' (InModule { try { try { try { throw (New-Object Runtime.InteropServices.COMException -ArgumentList 'x', -2147016656) } catch { ADSI_ThrowLdap $_ 'a' } } catch { ADSI_ThrowLdap $_ 'b' } } catch { "$(ADSI_IsNoSuchObject $_)/0x{0:X8}" -f (ADSI_HResultOf $_) } }) 'True/0x80072030'
 Check '見つからない: ADSearch の ItemNotFoundException（投げ直しても）' (InModule { try { try { throw [System.Management.Automation.ItemNotFoundException]::new('x') } catch { ADSI_ThrowLdap $_ 'a' } } catch { "$(ADSI_IsNotFound $_)/$(ADSI_IsNoSuchObject $_)" } }) 'True/False'
 Check '見つからないではない: 文に「見つかりません」があるだけの例外' (InModule { ADSI_IsNotFound (New-Object Exception -ArgumentList 'ドメイン コントローラーが見つかりません') }) 'False'
+Check '投げ直しの文は重ならない（Context | 直下の文）' (InModule { try { try { throw [System.Management.Automation.ItemNotFoundException]::new('X') } catch { ADSI_ThrowLdap $_ 'a' } } catch { try { ADSI_ThrowLdap $_ 'b' } catch { $_.Exception.Message } } }) 'b | a | X'
+Check '見つからないは外から catch [ItemNotFoundException] で受けられる' (InModule { try { try { throw [System.Management.Automation.ItemNotFoundException]::new('X') } catch { ADSI_ThrowLdap $_ 'a' } } catch [System.Management.Automation.ItemNotFoundException] { 'typed' } catch { 'untyped' } }) 'typed'
+Check 'ほかのエラーは ItemNotFoundException にしない' (InModule { try { try { throw (New-Object Runtime.InteropServices.COMException -ArgumentList 'x', -2147016694) } catch { ADSI_ThrowLdap $_ 'a' } } catch [System.Management.Automation.ItemNotFoundException] { 'typed' } catch { 'untyped' } }) 'untyped'
+# 本物の DirectoryEntry が投げる例外の形（AD が無くても 127.0.0.1 へはつながらずに落ちる）
+Check '本物の New-ADSConnection: 番号が連なりに残る' (InModule { try { New-ADSConnection -Server 127.0.0.1 -Path 'DC=x' } catch { $null -ne (ADSI_HResultOf $_) } }) 'True'
+Check '本物の RootDSE: 番号が連なりに残る'           (InModule { try { [void](ADSI_GetRootDSE -Server 127.0.0.1) } catch { $null -ne (ADSI_HResultOf $_) } }) 'True'
+Check '捨てたエラーを -Verbose に番号つきで出す' (InModule { $VerbosePreference = 'Continue'; (ADSI_VerboseSwallowed (New-Object Runtime.InteropServices.COMException -ArgumentList 'x', -2147016694) 4>&1 | Out-String) -match '0x8007200A' }) 'True'
+
+Write-Host '--- 日時: DirectorySearcher の UTC をローカル時刻に（RSAT と同じ）'
+$utc = [datetime]::SpecifyKind([datetime]'2026-01-01T00:00:00', 'Utc')
+Check 'Utc はローカルに'         (InModule { param($u) (ADSI_UtcToLocal $u) -eq $u.ToLocalTime() } @($utc)) 'True'
+Check 'Unspecified も UTC として' (InModule { param($u) (ADSI_UtcToLocal ([datetime]::SpecifyKind($u, 'Unspecified'))) -eq $u.ToLocalTime() } @($utc)) 'True'
+Check 'Local はそのまま・日時でない値もそのまま' (InModule { $l = [datetime]::SpecifyKind([datetime]'2026-01-01', 'Local'); "$((ADSI_UtcToLocal $l) -eq $l)/$(ADSI_UtcToLocal 'abc')/$(ADSI_UtcToLocal 5)" }) 'True/abc/5'
+Check '和暦の端末でも -Filter の日時は西暦' (InModule { $ci = New-Object Globalization.CultureInfo 'ja-JP'; $ci.DateTimeFormat.Calendar = New-Object Globalization.JapaneseCalendar; $old = [Threading.Thread]::CurrentThread.CurrentCulture; try { [Threading.Thread]::CurrentThread.CurrentCulture = $ci; ADSI_ConvertComparison "Created -ge '2026-01-01'" } finally { [Threading.Thread]::CurrentThread.CurrentCulture = $old } }) "(whenCreated>=$(([datetime]'2026-01-01').ToUniversalTime().ToString('yyyyMMddHHmmss.0\Z', [Globalization.CultureInfo]::InvariantCulture)))"
 
 Write-Host '--- DNS: DN とエスケープ'
 $zfd = { param($dn) ADSI_DnsZoneFromDN $dn }
@@ -307,7 +321,8 @@ Check 'Get-DnsServerZone: 逆引き'   "$($zones[0].IsReverseLookupZone) $($zone
 $rr = @(Get-DnsServerResourceRecord -ZoneName example.local)
 Check 'Get-DnsServerResourceRecord: 消したレコードは出さない' (($rr | ForEach-Object { "$($_.HostName)/$($_.RecordType)" }) -join ',') 'pc001/A,pc001/AAAA'
 Check 'Get-DnsServerResourceRecord: RSAT と同じ欄' (($rr[0].PSObject.Properties.Name) -join ',') 'HostName,RecordType,Type,Timestamp,TimeToLive,RecordData'
-Check 'Get-DnsServerResourceRecord: 探す場所とフィルター' (& $mod { $script:DnsCalls[0] }) 'Subtree|DC=example.local,CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local|(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))'
+Check 'Get-DnsServerResourceRecord: 先にゾーンの有無を dnsZone で' (& $mod { $script:DnsCalls[0] }) 'OneLevel|CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local|(&(objectClass=dnsZone)(name=example.local))'
+Check 'Get-DnsServerResourceRecord: 探す場所とフィルター' (& $mod { $script:DnsCalls[1] }) 'Subtree|DC=example.local,CN=MicrosoftDNS,DC=DomainDnsZones,DC=example,DC=local|(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))'
 $rr = @(Get-DnsServerResourceRecord -ZoneName example.local -RRType AAAA)
 Check 'Get-DnsServerResourceRecord -RRType' (($rr | ForEach-Object { $_.RecordData.IPv6Address }) -join ',') '2001:db8::5'
 & $mod { $script:DnsCalls.Clear() }
@@ -322,12 +337,14 @@ Check 'Get-ADDnsRecord -IncludeTombstoned で ZERO も' (($ad | ForEach-Object R
         param($Plan, $Server, [switch]$UseSSL, $Credential, [string]$Base, [string]$Filter, [string]$SearchScope, [string[]]$Properties)
         if ($Base -like 'DC=nozone.local,*') { return $null }
         if ($Filter -like '*(name=nozone.local)*') { return , (New-Object System.Collections.Generic.List[object]) }
+        if ($Filter -like '*dnsNode*(name=nohost)*') { return , (New-Object System.Collections.Generic.List[object]) }
         ADSI_DnsSearchIn_Real @PSBoundParameters
     }
 }
 CheckThrows 'Get-DnsServerResourceRecord: 無いゾーンはエラー' { Get-DnsServerResourceRecord -ZoneName nozone.local }
 CheckThrows 'Get-DnsServerZone -Name: 無いゾーンはエラー'      { Get-DnsServerZone -Name nozone.local }
 Check 'Get-DnsServerZone: 名前なしで 0 件はエラーにしない' (@(Get-DnsServerZone).Count) 3
+Check 'Get-DnsServerResourceRecord -Name: ゾーンはあって名前が無いときはエラーにせず 0 件' (@(Get-DnsServerResourceRecord -ZoneName example.local -Name nohost).Count) 0
 
 Write-Host '--- DNS: DNS_COUNT_NAME の長さの欄が終わりの 0 を含まない書き方でも、次の名前を正しく読む'
 $cn1 = CountName 'dc01.example.local'; $cn1[0] = [byte]($cn1[0] - 1)

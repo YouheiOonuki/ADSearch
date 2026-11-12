@@ -896,7 +896,7 @@ Invoke-ADSearchCommandTest 'Get-ADComputerHealth / Identity' {
 }
 
 Invoke-ADSearchCommandTest 'Get-ADUser / Filter PasswordLastSet -le 過去日' -AllowEmpty {
-    $pastDate = (Get-Date).AddYears(-1).ToString('yyyy-MM-dd')
+    $pastDate = (Get-Date).AddYears(-1).ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
     Get-ADUser -Filter "PasswordLastSet -le '$pastDate'" @Common -SearchBase $TestBase -ResultSetSize $Cap | Select-Object -First 1
 }
 

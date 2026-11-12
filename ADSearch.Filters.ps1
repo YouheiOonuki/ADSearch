@@ -204,7 +204,7 @@ function ADSI_ConvertComparison {
             throw "日時プロパティ '$left' に -$op は使用できません"
         }
         $ldapAttr = $script:ADSI_GeneralizedTimeFilterProps[$leftKey]
-        $gt = (ADSI_ParseFilterDate $right).ToUniversalTime().ToString('yyyyMMddHHmmss.0\Z')
+        $gt = (ADSI_ParseFilterDate $right).ToUniversalTime().ToString('yyyyMMddHHmmss.0\Z', [Globalization.CultureInfo]::InvariantCulture)
         switch ($op) {
             'eq' { return "($ldapAttr=$gt)" }
             'ne' { return "(!($ldapAttr=$gt))" }
