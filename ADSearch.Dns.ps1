@@ -345,7 +345,7 @@ function ADSI_DnsSearchIn {
         $noSuch = ADSI_IsNoSuchObject $_
         # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
         if ($noSuch -and -not $Plan.NCName) { return $null }
-        if (($noSuch -or $_.Exception.Message -match '0x8007200A') -and $Plan.NCName) {
+        if (($noSuch -or (ADSI_HResultOf $_) -eq 0x8007200AL) -and $Plan.NCName) {
             try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Plan.NCName }
             catch {
                 Write-Verbose "DNS: パーティションの根元も開けない: $($_.Exception.Message)"
@@ -474,7 +474,7 @@ function Get-DnsServerZone {
             }
         }
         # RSAT と同じく、名前を指定して 1 つも無ければエラー
-        if ($Name -and $emitted -eq 0) { throw "ゾーン '$($Name -join ', ')' が見つかりません（-Scope $Scope の AD 統合ゾーン）" }
+        if ($Name -and $emitted -eq 0) { throw [System.Management.Automation.ItemNotFoundException]::new("ゾーン '$($Name -join ', ')' が見つかりません（-Scope $Scope の AD 統合ゾーン）") }
     }
     catch {
         ADSI_ThrowLdap $_ 'Get-DnsServerZone に失敗しました'
@@ -625,7 +625,7 @@ function Get-DnsServerResourceRecord {
             }
         }
         # RSAT と同じく、無いゾーンはエラーにする（空のゾーンと見分けられるように）
-        if (-not $found) { throw "ゾーン '$ZoneName' が見つかりません（-Scope $Scope の AD 統合ゾーン）" }
+        if (-not $found) { throw [System.Management.Automation.ItemNotFoundException]::new("ゾーン '$ZoneName' が見つかりません（-Scope $Scope の AD 統合ゾーン）") }
     }
     catch {
         ADSI_ThrowLdap $_ 'Get-DnsServerResourceRecord に失敗しました'
