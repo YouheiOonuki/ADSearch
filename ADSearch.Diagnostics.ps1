@@ -391,8 +391,9 @@ function Get-ADComputerHealth {
         catch {
             # 「見つからない」場合のみ $ 付き sAMAccountName で再試行する。
             # 認証/接続エラー等はそのまま送出して真因を隠さない。
-            $msg = $_.Exception.Message
-            $notFound = ($msg -match '見つかりません') -or (ADSI_IsNoSuchObject $msg)
+            # Get-ADComputer が投げる「オブジェクトが見つかりません (Identity=…)」か no-such-object のときだけ。
+            # 「見つかりません」だけで見ると、OS の文（「ドメイン コントローラーが見つかりません」など）まで拾う
+            $notFound = ($_.Exception.Message -match 'オブジェクトが見つかりません \(Identity=') -or (ADSI_IsNoSuchObject $_)
             if ($notFound -and -not $Identity.EndsWith('$')) {
                 $computer = Get-ADComputer -Identity "$Identity`$" @getParams | Select-Object -First 1
             }

@@ -5,7 +5,7 @@ if (-not (Test-Path -LiteralPath $ConfigPath)) {
     throw "config ファイルが見つかりません: $ConfigPath"
 }
 
-$Config = Get-Content -LiteralPath $ConfigPath -Raw | ConvertFrom-Json
+$Config = Get-Content -LiteralPath $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $Server         = [string]$Config.Server
 $SampleUser     = [string]$Config.SampleUser

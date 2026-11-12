@@ -342,14 +342,14 @@ function ADSI_DnsSearchIn {
     try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Base }
     catch {
         Write-Verbose "DNS: 起点を開けない: $($_.Exception.Message)"
-        $noSuch = ADSI_IsNoSuchObject $_.Exception.Message
+        $noSuch = ADSI_IsNoSuchObject $_
         # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
         if ($noSuch -and -not $Plan.NCName) { return $null }
         if (($noSuch -or $_.Exception.Message -match '0x8007200A') -and $Plan.NCName) {
             try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Plan.NCName }
             catch {
                 Write-Verbose "DNS: パーティションの根元も開けない: $($_.Exception.Message)"
-                if (ADSI_IsNoSuchObject $_.Exception.Message) { return $null }   # パーティションごと無い
+                if (ADSI_IsNoSuchObject $_) { return $null }   # パーティションごと無い
                 Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
                 return $null
             }

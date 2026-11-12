@@ -251,7 +251,11 @@ Check '日本語の 0x8007200A でもパーティションの根元から探す'
 $nso = { param($m) ADSI_IsNoSuchObject $m }
 Check '無い: 0x80072030（日本語）'   (InModule $nso @('検索の起点が見つかりません (0x80072030): サーバーにそのようなオブジェクトはありません。')) 'True'
 Check '無いではない: 日本語の 0x8007200A' (InModule $nso @('New-ADSConnection に失敗しました (0x8007200A): 指定されたディレクトリ サービス属性または値が存在しません。')) 'False'
-Check '無い: HRESULT の無い日本語の文' (InModule $nso @('オブジェクトが存在しません')) 'True'
+Check '無い: 番号の無い 0x80072030 の日本語の文' (InModule $nso @('サーバーにそのようなオブジェクトはありません。')) 'True'
+Check '無いではない: 番号の無い「存在しません」' (InModule $nso @('指定されたディレクトリ サービス属性または値が存在しません。')) 'False'
+Check '無い: 例外の HResult 0x80072030（文は何語でも）' (InModule { ADSI_IsNoSuchObject (New-Object Runtime.InteropServices.COMException('何かの文', -2147016656)) }) 'True'
+Check '無いではない: 例外の HResult 0x8007200A（文に「存在しません」）' (InModule { ADSI_IsNoSuchObject (New-Object Exception('外', (New-Object Runtime.InteropServices.COMException('値が存在しません', -2147016694)))) }) 'False'
+Check '無い: ErrorRecord でも' (InModule { try { throw (New-Object Runtime.InteropServices.COMException('x', -2147016656)) } catch { ADSI_IsNoSuchObject $_ } }) 'True'
 # ACL によっては同じ状況が 0x80072030（そのようなオブジェクトはありません）で返る（実機で確認、2026-11-12）。黙って 0 件にしない
 $fallbackNoSuch = [scriptblock]::Create($fallback.ToString().Replace("(0x8007200A): The specified directory service attribute or value does not exist.", "(0x80072030): そのようなオブジェクトはありません。"))
 Check '0x80072030 でもパーティションの根元から探す' (InModule $fallbackNoSuch) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'

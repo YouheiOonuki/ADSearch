@@ -41,7 +41,7 @@ function Import-ADSearch {
         if (-not (Test-Path -LiteralPath $file)) {
             throw "ファイルが見つかりません: $file"
         }
-        $code = Get-Content -LiteralPath $file -Raw
+        $code = Get-Content -LiteralPath $file -Raw -Encoding UTF8
         # 関数内で . ([scriptblock]) するとドットソース先が関数スコープになり、
         # 取り込んだ関数が Import-ADSearch の終了とともに失われる。
         # 各関数定義を global: に書き換えてグローバルスコープへ確実に取り込む。

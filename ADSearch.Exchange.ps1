@@ -35,7 +35,7 @@ function ADSI_ExchangeRun {
             -ResultSetSize $ResultSetSize -TimeoutSeconds $Timeout -ProgressActivity $ProgressActivity
     }
     catch {
-        if (ADSI_IsNoSuchObject $_.Exception.Message) {
+        if (ADSI_IsNoSuchObject $_) {
             Write-Warning 'Exchange の構成情報が見つかりません（Exchange 未導入、または構成パーティションの読み取り権限がない可能性があります）。'
             return
         }
@@ -440,7 +440,7 @@ function Get-AddressList {
         }
     }
     catch {
-        if (ADSI_IsNoSuchObject $_.Exception.Message) {
+        if (ADSI_IsNoSuchObject $_) {
             Write-Warning 'アドレスリストの構成情報が見つかりません（Exchange 未導入、または構成パーティションの読み取り権限がない可能性があります）。'
             return
         }
@@ -488,7 +488,7 @@ function Get-GlobalAddressList {
         }
     }
     catch {
-        if (ADSI_IsNoSuchObject $_.Exception.Message) {
+        if (ADSI_IsNoSuchObject $_) {
             Write-Warning 'グローバルアドレスリストの構成情報が見つかりません。'
             return
         }
