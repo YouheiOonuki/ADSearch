@@ -245,6 +245,9 @@ $fallback = {
     "$script:FbRoot|$script:FbScope|$(($z | ForEach-Object { $_['name'][0] }) -join ',')|$(($r | ForEach-Object { $_['name'][0] }) -join ',')|$($null -eq $n)"
 }
 Check 'コンテナの直下（ゾーン）とゾーンの下（レコード）だけを残す、無いゾーンは $null' (InModule $fallback) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
+# ACL によっては同じ状況が 0x80072030（そのようなオブジェクトはありません）で返る（実機で確認、2026-11-12）。黙って 0 件にしない
+$fallbackNoSuch = [scriptblock]::Create($fallback.ToString().Replace("(0x8007200A): The specified directory service attribute or value does not exist.", "(0x80072030): そのようなオブジェクトはありません。"))
+Check '0x80072030 でもパーティションの根元から探す' (InModule $fallbackNoSuch) 'DC=DomainDnsZones,DC=example,DC=local|Subtree|example.local|@,pc1|True'
 
 Write-Host '--- DNS: DN とエスケープ'
 $zfd = { param($dn) ADSI_DnsZoneFromDN $dn }
