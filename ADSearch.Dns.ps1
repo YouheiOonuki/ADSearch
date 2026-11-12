@@ -338,18 +338,22 @@ function ADSI_DnsSearchIn {
     # 実機で確認、2026-11-11・11-12）は、パーティションの根元から探し、DN が起点の下にあるものだけを残す。
     # 本当に無い置き場は、根元から探して 0 件なので $null になる（下の「1 件も無ければ」）
     $within = $null
+    Write-Verbose "DNS: $($Plan.Scope) を探す（Server=$srv, Base=$Base, Filter=$Filter, $SearchScope）"
     try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Base }
     catch {
+        Write-Verbose "DNS: 起点を開けない: $($_.Exception.Message)"
         $noSuch = ADSI_IsNoSuchObject $_.Exception.Message
         # 無い置き場は $null（見つかって 0 件のときは空の並び）。ゾーンが無いことを呼ぶ側が見分けられるように
         if ($noSuch -and -not $Plan.NCName) { return $null }
         if (($noSuch -or $_.Exception.Message -match '0x8007200A') -and $Plan.NCName) {
             try { $conn = New-ADSConnection -Server $srv -UseSSL:$UseSSL -Credential $Credential -Path $Plan.NCName }
             catch {
+                Write-Verbose "DNS: パーティションの根元も開けない: $($_.Exception.Message)"
                 if (ADSI_IsNoSuchObject $_.Exception.Message) { return $null }   # パーティションごと無い
                 Write-Warning "DNS の置き場を読めませんでした（$($Plan.Scope): $Base）: $($_.Exception.Message)"
                 return $null
             }
+            Write-Verbose "DNS: 根元（$($Plan.NCName)）から Subtree で探し、起点の下だけを残す"
             $within = @{ Base = $Base; OneLevel = ($SearchScope -eq 'OneLevel') }
             $SearchScope = 'Subtree'
             if ($Properties -notcontains 'distinguishedName') { $Properties = @($Properties) + 'distinguishedName' }
@@ -365,7 +369,9 @@ function ADSI_DnsSearchIn {
         $res = $null
         try {
             $res = $s.FindAll()
+            $hit = 0
             foreach ($r in $res) {
+                $hit++
                 $h = @{}
                 foreach ($a in $Properties) {
                     $k = $a.ToLowerInvariant()
@@ -374,9 +380,13 @@ function ADSI_DnsSearchIn {
                     if ($null -ne $col) { for ($i = 0; $i -lt $col.Count; $i++) { $vals.Add($col[$i]) } }
                     $h[$k] = $vals
                 }
-                if ($within -and -not (ADSI_DnsUnder ([string]$h['distinguishedname'][0]) $within.Base $within.OneLevel)) { continue }
+                if ($within -and -not (ADSI_DnsUnder ([string]$h['distinguishedname'][0]) $within.Base $within.OneLevel)) {
+                    if ($hit -le 3) { Write-Verbose "DNS: 起点の下でないので外した: $([string]$h['distinguishedname'][0])" }
+                    continue
+                }
                 $rows.Add($h)
             }
+            Write-Verbose "DNS: 見つかった $hit 件、残した $($rows.Count) 件"
         }
         finally { if ($res) { $res.Dispose() }; $s.Dispose() }
     }
