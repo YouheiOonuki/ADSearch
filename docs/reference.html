@@ -223,7 +223,7 @@ pre code { overflow-wrap: normal; }
 <main>
 
 <h1>ADSearch リファレンスマニュアル</h1>
-<p class="subtitle">Version 1.5.1 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+<p class="subtitle">Version 1.5.2 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
@@ -1427,6 +1427,10 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <!-- ========================================================== -->
 <h2 id="changelog">変更履歴</h2>
+<h3>1.5.2（2026-11-12）</h3>
+<ul>
+  <li><strong>DNS のコマンド：</strong><code>-Verbose</code> を付けると、どの置き場をどの DC で探し、何件見つかって何件残したかを出すように（ゾーンが出ないときの切り分け用）</li>
+</ul>
 <h3>1.5.1（2026-11-12）</h3>
 <ul>
   <li><strong>Get-DnsServerZone・Get-DnsServerResourceRecord・Get-ADDnsRecord：</strong>DNS の置き場（<code>CN=MicrosoftDNS</code>）を開いたときに「そのようなオブジェクトはありません」が返る環境で、何も返さずに終わっていたのを直しました。その場合もパーティションの根元から探します。</li>
@@ -1479,7 +1483,7 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <hr>
 <p class="colophon">
-ADSearch v1.5.1 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+ADSearch v1.5.2 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 
 </main>
