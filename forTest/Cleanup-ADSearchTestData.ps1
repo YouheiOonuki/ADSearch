@@ -71,7 +71,7 @@ catch { Write-Host "  スキップ: 192.168.200.0/24 ($($_.Exception.Message))" 
 # config のテスト固有設定をリセット
 $configPath = Join-Path $PSScriptRoot 'test_all.config.json'
 if (Test-Path $configPath) {
-    $config = Get-Content $configPath -Raw | ConvertFrom-Json
+    $config = Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $config.SampleOU      = ''
     $config.SampleDnsName = ''
     $config | ConvertTo-Json -Depth 3 |

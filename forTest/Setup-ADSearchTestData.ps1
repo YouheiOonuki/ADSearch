@@ -178,7 +178,7 @@ Write-Host "  ※ AD ごみ箱が有効な場合のみ IncludeDeletedObjects で
 Write-Host "[8] test_all.config.json 更新..."
 
 $configPath = Join-Path $PSScriptRoot 'test_all.config.json'
-$config = Get-Content $configPath -Raw | ConvertFrom-Json
+$config = Get-Content $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $config.SampleOU      = $ouDN
 $config.SampleDnsName = ($env:COMPUTERNAME).ToLower()

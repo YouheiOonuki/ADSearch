@@ -1,5 +1,5 @@
 ﻿@{
-    ModuleVersion     = '1.5.3'
+    ModuleVersion     = '1.5.4'
     GUID              = '0ab80c38-cafb-4b36-b6be-e34949ab1861'
     RootModule        = 'ADSearch.psm1'
 

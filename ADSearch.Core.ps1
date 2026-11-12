@@ -365,20 +365,29 @@ function ADSI_GetNamingContexts {
     finally { $r.Dispose() }
 }
 
-# bind/検索時の「オブジェクトが存在しない」エラー判定（ロケール非依存）。
-# 日本語/英語のメッセージ表現に加え、no-such-object の HRESULT 0x80072030 でも判定する。
-# HRESULT が付いていて 0x80072030 でなければ「無い」ではない。日本語の 0x8007200A
-#「指定されたディレクトリ サービス属性または値が存在しません」を「存在しません」で取り違えないため（職場の実機、2026-11-12）
-function ADSI_IsNoSuchObject([string]$message) {
+# bind/検索時の「オブジェクトが存在しない」（no-such-object、0x80072030）の判定。エラー番号で決め、文の言葉では決めない。
+# 文の言葉は OS の言語で変わり、日本語の 0x8007200A「…属性または値が存在しません」を「存在しません」で
+# 取り違えて、DNS のゾーンが 1 件も返らなかった（職場の実機、2026-11-12）。
+# 引数: ErrorRecord・Exception・文字列のどれでもよい。
+#   例外なら InnerException まで COMException の HResult を見る。
+#   文字列（ADSearch が投げ直した文）なら、付けた "(0x80072030)" を見る。
+#   番号が無い文字列だけ、0x80072030 の文面（英語・日本語）で決める。
+function ADSI_IsNoSuchObject($err) {
+    if ($null -eq $err) { return $false }
+    if ($err -is [System.Management.Automation.ErrorRecord]) { $err = $err.Exception }
+    $message = [string]$err
+    if ($err -is [Exception]) {
+        $message = $err.Message
+        for ($e = $err; $e; $e = $e.InnerException) {
+            if ($e -is [System.Runtime.InteropServices.COMException]) {
+                return ([uint32]($e.HResult -band 0xffffffffL)) -eq 0x80072030L
+            }
+        }
+    }
     if ([string]::IsNullOrEmpty($message)) { return $false }
-    $hrs = [regex]::Matches($message, '0x8007[0-9A-Fa-f]{4}') | ForEach-Object { $_.Value.ToUpperInvariant() }
-    if ($hrs -and -not ($hrs -contains '0X80072030')) { return $false }
-    return [bool](
-        $message -match '0x80072030' -or
-        $message -match '(?i)no such object' -or
-        $message -match 'そのようなオブジェクト' -or
-        $message -match '存在しません'
-    )
+    $hrs = @([regex]::Matches($message, '0x[0-9A-Fa-f]{8}') | ForEach-Object { $_.Value.ToUpperInvariant() })
+    if ($hrs.Count) { return ($hrs -contains '0X80072030') }
+    return [bool]($message -match '(?i)no such object' -or $message -match 'そのようなオブジェクトはありません')
 }
 
 function New-ADSConnection {
@@ -438,7 +447,7 @@ function New-ADSConnection {
         if ($null -ne $hr) { $hrText = ' (0x{0:X8})' -f ([uint32]($hr -band 0xffffffffL)) }
         # 起点（-SearchBase など）が無いときは、ADSI の文面（"Exception setting AuthenticationType …"）では原因が読めないので名指しする。
         # 0x80072030 は残す（呼ぶ側が ADSI_IsNoSuchObject で「無い置き場」を見分けるため）
-        if ($null -ne $hr -and ([uint32]($hr -band 0xffffffffL)) -eq 0x80072030) {
+        if ($null -ne $hr -and ([uint32]($hr -band 0xffffffffL)) -eq 0x80072030L) {
             throw "検索の起点が見つかりません: '$Path'（-SearchBase などの DN を確かめてください。既定の Users は OU でなく CN=Users） (Server='$Server')$hrText"
         }
         throw "New-ADSConnection に失敗しました (Server='$Server', Path='$Path', UseSSL=$UseSSL)$($hrText): $($_.Exception.Message)"

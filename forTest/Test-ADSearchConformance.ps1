@@ -114,7 +114,7 @@ Add-ConformanceRowConditional 'Export parity (declared functions resolve)' `
 # ------------------------------------------------------------------
 $refPath = Join-Path $repoRoot 'docs\reference.html'
 if (Test-Path -LiteralPath $refPath) {
-    $refText = Get-Content -LiteralPath $refPath -Raw
+    $refText = Get-Content -LiteralPath $refPath -Raw -Encoding UTF8
     $idMatches = [regex]::Matches($refText, 'id="((?:Get|Search|Invoke)-[A-Za-z]+)"')
     $refIds = @($idMatches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
 
@@ -131,7 +131,7 @@ else {
 
 $readmePath = Join-Path $repoRoot 'README.md'
 if (Test-Path -LiteralPath $readmePath) {
-    $readmeText = Get-Content -LiteralPath $readmePath -Raw
+    $readmeText = Get-Content -LiteralPath $readmePath -Raw -Encoding UTF8
     # Get-ADReplication* のような総称の書き方（末尾が *）はコマンド名として数えない
     $tokenMatches = [regex]::Matches($readmeText, '\b(Get|Search|Invoke)-[A-Za-z]+(?![A-Za-z*])')
     $readmeTokens = @($tokenMatches | ForEach-Object { $_.Value } | Sort-Object -Unique)

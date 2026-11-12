@@ -223,7 +223,7 @@ pre code { overflow-wrap: normal; }
 <main>
 
 <h1>ADSearch リファレンスマニュアル</h1>
-<p class="subtitle">Version 1.5.3 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
+<p class="subtitle">Version 1.5.4 &nbsp;|&nbsp; RSAT 不要の Active Directory / Exchange 構成・受信者情報取得ライブラリ</p>
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
@@ -1427,6 +1427,14 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <!-- ========================================================== -->
 <h2 id="changelog">変更履歴</h2>
+<h3>1.5.4（2026-11-12）</h3>
+<p>日本語の Windows で動かす前提で、全体を見直しました。</p>
+<ul>
+  <li><strong>エラーの見分け方：</strong>「オブジェクトが無い」かどうかを、エラーの文の言葉でなくエラー番号（0x80072030）で決めるように。1.5.3 で直した DNS のほか、Get-AddressList・Get-GlobalAddressList・Exchange の構成の読み取りで、権限のエラーを「Exchange 未導入」と取り違える余地があった</li>
+  <li><strong>Get-ADComputerHealth：</strong><code>$</code> 付きの名前で探し直すのを、ADSearch 自身の「オブジェクトが見つかりません」と no-such-object のときだけに（「ドメイン コントローラーが見つかりません」などの OS の文で探し直さない）</li>
+  <li><strong>検索の起点が無いとき：</strong>「検索の起点が見つかりません」の案内が出ていなかったのを直しました（エラー番号の比べ方の誤り）</li>
+  <li><strong>読み込み：</strong>Import-ADSearch.ps1 と forTest のスクリプトが、ファイルを UTF-8 と指定して読むように（Windows PowerShell 5.1 で BOM の無いファイルを Shift_JIS と読まない）</li>
+</ul>
 <h3>1.5.3（2026-11-12）</h3>
 <ul>
   <li><strong>Get-DnsServerZone・Get-DnsServerResourceRecord・Get-ADDnsRecord：</strong>日本語の Windows で、一般ユーザーだとゾーンもレコードも 1 件も返らなかったのを直しました（「…属性または値が存在しません」というエラーを「置き場が無い」と取り違えていた）</li>
@@ -1487,7 +1495,7 @@ Get-ADReplicationSubnet -Server dc01.branch1.example.local  # 同一結果</code
 
 <hr>
 <p class="colophon">
-ADSearch v1.5.3 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
+ADSearch v1.5.4 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Active Directory（RSAT 不要）
 </p>
 
 </main>
