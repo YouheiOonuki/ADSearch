@@ -448,6 +448,13 @@ Check 'Connection: 受け取る側・送る側・KCC' "$(($cn.ReplicateToDirecto
 Check 'Get-Recipient: グループの RecipientType' ((@(Get-Recipient) | ForEach-Object RecipientType) -join ',') 'MailUniversalSecurityGroup,MailUniversalDistributionGroup,MailNonUniversalGroup'
 
 # ------------------------------------------------------------
+Write-Host '--- 英語のページの一覧 ＝ 書き出す関数'
+$enHtml = [IO.File]::ReadAllText((Join-Path $root 'docs\en\index.html'), [Text.Encoding]::UTF8)
+$listed = @([regex]::Matches($enHtml, '<p class="cmds">(.*?)</p>') | ForEach-Object { [regex]::Matches($_.Groups[1].Value, '<code>([^<]+)</code>') } | ForEach-Object { $_.Groups[1].Value }) | Sort-Object
+$exported = @($mod.ExportedFunctions.Keys) | Sort-Object
+Check 'docs/en/index.html の一覧の数と名前' "$($listed.Count)|$($listed -join ',')" "$($exported.Count)|$($exported -join ',')"
+
+# ------------------------------------------------------------
 Write-Host ''
 if ($script:fail -eq 0) {
     Write-Host "すべて OK（$($script:count) 件）" -ForegroundColor Green
