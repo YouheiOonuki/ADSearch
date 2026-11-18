@@ -97,6 +97,92 @@ Check 'Get-AcceptedDomain -Identity example.com' (Sent { Get-AcceptedDomain -Ide
 Check "Get-ADUser -Filter `"PasswordNeverExpires -eq '```$true'`"" (Sent { Get-ADUser -Filter "PasswordNeverExpires -eq '`$true'" }) "(&(&(objectCategory=person)(objectClass=user))$pneBit)"
 
 # ------------------------------------------------------------
+Write-Host '--- -Filter の GroupScope・GroupCategory は groupType のビットの式に'
+$gtRule = 'groupType:1.2.840.113556.1.4.803:='
+foreach ($c in @(
+    @('GroupScope',    'DomainLocal',  "($($gtRule)4)",          "(!($($gtRule)4))"),
+    @('GroupScope',    'Global',       "($($gtRule)2)",          "(!($($gtRule)2))"),
+    @('GroupScope',    'Universal',    "($($gtRule)8)",          "(!($($gtRule)8))"),
+    @('GroupCategory', 'Security',     "($($gtRule)2147483648)", "(!($($gtRule)2147483648))"),
+    @('GroupCategory', 'Distribution', "(!($($gtRule)2147483648))", "($($gtRule)2147483648)")
+)) {
+    Check "$($c[0]) -eq '$($c[1])'" (InModule $toLdap @("$($c[0]) -eq '$($c[1])'")) $c[2]
+    Check "$($c[0]) -ne '$($c[1])'" (InModule $toLdap @("$($c[0]) -ne '$($c[1])'")) $c[3]
+}
+Check "GroupScope -eq 'global'（大文字と小文字を分けない）" (InModule $toLdap @("GroupScope -eq 'global'")) "($($gtRule)2)"
+CheckThrows "GroupScope -like 'G*'（-eq・-ne のほかは例外）" { InModule $toLdap @("GroupScope -like 'G*'") }
+CheckThrows "GroupScope -eq 'Local'（名前に無い値は例外）"   { InModule $toLdap @("GroupScope -eq 'Local'") }
+CheckThrows "GroupCategory -eq 'Mail'（名前に無い値は例外）" { InModule $toLdap @("GroupCategory -eq 'Mail'") }
+Check "Get-ADGroup -Filter `"GroupScope -eq 'Global'`"（docs/reference.html の例）" (Sent { Get-ADGroup -Filter "GroupScope -eq 'Global'" }) "(&(objectCategory=group)($($gtRule)2))"
+
+# 偽の AD: & | ! と「属性=値」「属性:1.2.840.113556.1.4.803:=数」（ビットの AND。groupType は 32 ビットとして見る）だけを解く
+function LdapEval([string]$F, [ref]$P, [hashtable]$O) {
+    if ($F[$P.Value] -ne '(') { throw "LDAP の式に ( が無い: $F" }
+    $P.Value++
+    $c = $F[$P.Value]
+    if ($c -eq '&' -or $c -eq '|') {
+        $P.Value++
+        $vals = @()
+        while ($F[$P.Value] -eq '(') { $vals += LdapEval $F $P $O }
+        $r = if ($c -eq '&') { -not ($vals -contains $false) } else { $vals -contains $true }
+    }
+    elseif ($c -eq '!') {
+        $P.Value++
+        $r = -not (LdapEval $F $P $O)
+    }
+    else {
+        $end = $F.IndexOf(')', $P.Value)
+        $item = $F.Substring($P.Value, $end - $P.Value)
+        $P.Value = $end
+        if ($item -match '^(\w+):1\.2\.840\.113556\.1\.4\.803:=(\d+)$') {
+            $v = $O[$Matches[1]]; $n = [int64]$Matches[2]
+            $r = ($null -ne $v) -and (((([int64]$v) -band 0xFFFFFFFFL) -band $n) -eq $n)
+        }
+        elseif ($item -match '^(\w+)=(.*)$') {
+            $v = $O[$Matches[1]]; $want = $Matches[2]
+            $r = ($null -ne $v) -and ($want -eq '*' -or @($v) -contains $want)
+        }
+        else { throw "偽の AD が解けない項: $item" }
+    }
+    if ($F[$P.Value] -ne ')') { throw "LDAP の式に ) が無い: $F" }
+    $P.Value++
+    $r
+}
+function LdapMatch([string]$F, [hashtable]$O) {
+    $p = [ref]0
+    $r = LdapEval $F $p $O
+    if ($p.Value -ne $F.Length) { throw "LDAP の式を読み切れない: $F" }
+    $r
+}
+& $mod {
+    param($match, $eval)
+    Set-Item function:script:LdapMatch $match
+    Set-Item function:script:LdapEval $eval
+    $script:FakeGroups = @(
+        @{ name = 'g-global-sec';     objectCategory = 'group'; groupType = -2147483646 }
+        @{ name = 'g-local-sec';      objectCategory = 'group'; groupType = -2147483644 }
+        @{ name = 'g-universal-sec';  objectCategory = 'group'; groupType = -2147483640 }
+        @{ name = 'g-universal-dist'; objectCategory = 'group'; groupType = 8 }
+    )
+    function script:ADSI_Query {
+        param([string]$Filter)
+        $script:LastFilter = $Filter
+        foreach ($g in $script:FakeGroups) { if (LdapMatch $Filter $g) { [pscustomobject]@{ Name = $g.name } } }
+    }
+} ${function:LdapMatch} ${function:LdapEval}
+# 返る group ＝ 出す側（ADSI_GroupScope・ADSI_GroupCategory）で 4 つの group を分けた group。-ne は残り
+$byOutput = { param($prop, $val) $fn = if ($prop -eq 'GroupScope') { 'ADSI_GroupScope' } else { 'ADSI_GroupCategory' }; @($script:FakeGroups | Where-Object { (& $fn $_.groupType) -eq $val } | ForEach-Object { $_.name }) -join ',' }
+$allNames = @(InModule { $script:FakeGroups | ForEach-Object { $_.name } })
+foreach ($c in @(@('GroupScope', 'DomainLocal'), @('GroupScope', 'Global'), @('GroupScope', 'Universal'), @('GroupCategory', 'Security'), @('GroupCategory', 'Distribution'))) {
+    $want = InModule $byOutput $c
+    $wantNe = @($allNames | Where-Object { @($want -split ',') -notcontains $_ }) -join ','
+    $gotEq = @(Get-ADGroup -Filter "$($c[0]) -eq '$($c[1])'" | ForEach-Object Name) -join ','
+    $gotNe = @(Get-ADGroup -Filter "$($c[0]) -ne '$($c[1])'" | ForEach-Object Name) -join ','
+    Check "偽の AD: $($c[0]) '$($c[1])' の -eq・-ne で返る group ＝ 出す側で分けた group" "$gotEq | $gotNe" "$want | $wantNe"
+}
+& $mod { function script:ADSI_Query { param([string]$Filter) $script:LastFilter = $Filter; [pscustomobject]@{ Name = 'x'; DistinguishedName = 'CN=x' } } }
+
+# ------------------------------------------------------------
 # DNS（AD 統合ゾーン）。dnsRecord・dnsProperty のバイト列は MS-DNSP 2.3.2 の形で手で組む
 # ------------------------------------------------------------
 Write-Host '--- DNS: dnsRecord（DNS_RPC_RECORD）を解く'

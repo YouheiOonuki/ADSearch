@@ -229,6 +229,25 @@ function ADSI_ConvertComparison {
         }
     }
 
+    # GroupScope・GroupCategory は AD の属性でなく groupType のビットなので、ビットの式にする（RSAT と同じ）。
+    # ビットの数は ADSI_GroupTypeBits（出す側と同じ 1 か所）。-eq・-ne と、出す側が返す名前のほかは LDAP に送らず例外にする
+    if ($leftKey -in @('groupscope', 'groupcategory')) {
+        if ($op -notin @('eq', 'ne')) {
+            throw "プロパティ '$left' に -$op は使用できません（-eq・-ne だけ）"
+        }
+        $names = if ($leftKey -eq 'groupscope') { @('DomainLocal', 'Global', 'Universal') } else { @('Security', 'Distribution') }
+        $name = @($names | Where-Object { $_ -ieq $right })[0]
+        if (-not $name) {
+            throw "プロパティ '$left' の値は $($names -join '・') のどれかです: $right"
+        }
+        $bit = $script:ADSI_GroupTypeBits[$(if ($name -eq 'Distribution') { 'Security' } else { $name })]
+        $has = "(groupType:1.2.840.113556.1.4.803:=$bit)"
+        # Distribution は Security のビットが無いこと。-ne は -eq の否定
+        $set = ($name -ne 'Distribution') -eq ($op -eq 'eq')
+        if ($set) { return $has }
+        return "(!$has)"
+    }
+
     $attr = ADSI_FilterAttr $left
 
     if ($left -ieq 'Enabled') {

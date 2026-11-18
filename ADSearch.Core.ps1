@@ -219,19 +219,29 @@ function ADSI_AgeInDays($v) {
     [int]((Get-Date) - $d).TotalDays
 }
 
+# groupType のビット。出す側（ADSI_GroupScope・ADSI_GroupCategory）と、-Filter の GroupScope・GroupCategory を
+# LDAP のビットの式にする側（ADSI_ConvertComparison）が、どちらもここを読む（数を 2 か所に持たない）
+$script:ADSI_GroupTypeBits = @{
+    Global      = 0x2
+    DomainLocal = 0x4
+    Universal   = 0x8
+    Security    = 0x80000000L
+}
+
 function ADSI_GroupScope($g) {
     $x = ADSI_ToInt64 $g
     if ($null -eq $x) { return $null }
-    if ($x -band 8)        { 'Universal'   }
-    elseif ($x -band 4)    { 'DomainLocal' }
-    elseif ($x -band 2)    { 'Global'      }
-    else                   { 'Unknown'     }
+    $b = $script:ADSI_GroupTypeBits
+    if ($x -band $b.Universal)       { 'Universal'   }
+    elseif ($x -band $b.DomainLocal) { 'DomainLocal' }
+    elseif ($x -band $b.Global)      { 'Global'      }
+    else                             { 'Unknown'     }
 }
 
 function ADSI_GroupCategory($g) {
     $x = ADSI_ToInt64 $g
     if ($null -eq $x) { return $null }
-    if ($x -band 0x80000000L) { 'Security' } else { 'Distribution' }
+    if ($x -band $script:ADSI_GroupTypeBits.Security) { 'Security' } else { 'Distribution' }
 }
 
 function ADSI_ResolveIPv4($h) {
