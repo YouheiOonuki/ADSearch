@@ -408,7 +408,7 @@ More forest information.
 | `Sites` | Names of the site objects directly under CN=Sites,\<Config\> |
 
 ### Get-ADDomainController
-Enumerates the nTDSDSA objects in the Config NC and, like RSAT, returns **the DCs of the domain you are connected to** (since 1.5; up to 1.4 it returned every DC in the forest with the connected domain as their domain). The old behaviour is kept under the `-Discover` switch.
+Enumerates the nTDSDSA objects in the Config NC and, like RSAT, returns **the DCs of the domain you are connected to** (since 1.5; up to 1.4 it returned every DC in the forest with the connected domain as their domain). With `-Discover`, it returns only the DC you are connected to, built from rootDSE (`Site`, `IsGlobalCatalog` and `IsReadOnly` are empty).
 
 | Property | Source |
 |---|---|
