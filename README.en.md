@@ -408,7 +408,7 @@ More forest information.
 | `Sites` | Names of the site objects directly under CN=Sites,\<Config\> |
 
 ### Get-ADDomainController
-Enumerates every nTDSDSA in the Config NC and returns all DCs (the old behaviour is kept under the `-Discover` switch).
+Enumerates the nTDSDSA objects in the Config NC and, like RSAT, returns **the DCs of the domain you are connected to** (since 1.5; up to 1.4 it returned every DC in the forest with the connected domain as their domain). The old behaviour is kept under the `-Discover` switch.
 
 | Property | Source |
 |---|---|
@@ -417,9 +417,12 @@ Enumerates every nTDSDSA in the Config NC and returns all DCs (the old behaviour
 | `Site` | Site CN taken from the DN hierarchy |
 | `IsGlobalCatalog` | nTDSDSA `options` bit 0x1 (NTDSDSA_OPT_IS_GC) |
 | `IsReadOnly` | objectClass includes `nTDSDSARO` (RODC) |
-| `Domain` / `Forest` | From rootDSE |
+| `Domain` | From the server object's `serverReference` (the DN of the DC's computer object) |
+| `Forest` | From rootDSE |
+| `IPv4Address` / `OperatingSystem` | Name resolution of the host name / `operatingSystem` of the computer object |
+| `ComputerObjectDN` / `ServerObjectDN` / `NTDSSettingsObjectDN` | DN of each object |
 
-`-Identity` is a client-side wildcard match on Name/HostName. `-Filter '*'` or no filter returns all. Complex `-Filter` expressions are best effort for now (all DCs are returned).
+`-Identity` is a client-side wildcard match on Name/HostName. `-Filter` takes the same syntax as RSAT (`"Name -like 'DC*' -and IsGlobalCatalog -eq $true"`) and is applied to the properties after they are retrieved (values can only be quoted strings, numbers and `$true`/`$false`).
 
 ### Get-ADTrust
 Adds trust details.
