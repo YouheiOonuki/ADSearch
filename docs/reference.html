@@ -685,8 +685,8 @@ Get-ADDomain -Identity corp.local</code></pre>
   <tr><td>ComputerObjectDN / ServerObjectDN / NTDSSettingsObjectDN</td><td>DC のコンピューター・サーバー・NTDS Settings の DN</td></tr>
 </table>
 
-<p>構成パーティションの NTDS Settings（nTDSDSA）を列挙し、RSAT と同じく接続先のドメインの DC を返します（1.5 から）。<code>-Discover</code> を付けると、以前と同じく接続先 DC 1 台だけを返します（このとき Site / IsGlobalCatalog / IsReadOnly は空）。</p>
-<div class="note"><code>-Identity</code> は取得した DC の Name / HostName とワイルドカードで照合します（例: <code>-Identity 'dc0*'</code>）。<code>-Filter</code> は RSAT と同じ書き方（例: <code>"IsGlobalCatalog -eq $true"</code>）を、取得後の欄に当てて絞ります。値は引用符の文字・数・<code>$true</code>/<code>$false</code> だけです。</div>
+<p>構成パーティションの NTDS Settings（nTDSDSA）を列挙し、RSAT と同じく接続先のドメインの DC を返します（1.5 から）。<code>-Discover</code> を付けると、接続先の DC 1 件だけを rootDSE から返します（<code>Site</code>・<code>IsGlobalCatalog</code>・<code>IsReadOnly</code> は空）。</p>
+<div class="note"><code>-Identity</code> は取得した DC の Name / HostName とワイルドカードで照合します（例: <code>-Identity 'dc0*'</code>）。<code>-Filter</code> は RSAT と同じ書き方（例: <code>'Name -like "DC*" -and IsGlobalCatalog -eq $true'</code>）を、取得後の欄に当てて絞ります。値は引用符の文字・数・<code>$true</code>/<code>$false</code> だけです。</div>
 
 <h3>使用例</h3>
 <pre><code>Get-ADDomainController -Server dc01.corp.local
