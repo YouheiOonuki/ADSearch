@@ -222,10 +222,10 @@ function ADSI_ConvertComparison {
         }
     }
 
-    # userAccountControl ビットプロパティ
+    # userAccountControl ビットプロパティ。-eq・-ne のほかは、値を見る前に例外にする（GroupScope と同じ文。Q-571）
     if ($script:ADSI_UacBitFilterProps.ContainsKey($leftKey)) {
         if ($op -notin @('eq','ne')) {
-            throw "プロパティ '$left' に -$op は使用できません"
+            throw "プロパティ '$left' に -$op は使用できません（-eq・-ne だけ）"
         }
         $bit = $script:ADSI_UacBitFilterProps[$leftKey]
         if (($op -eq 'eq' -and $right -ieq 'TRUE') -or ($op -eq 'ne' -and $right -ieq 'FALSE')) {
@@ -281,6 +281,10 @@ function ADSI_ConvertComparison {
     $attr = ADSI_FilterAttr $left
 
     if ($left -ieq 'Enabled') {
+        # -eq・-ne のほかは、値を見る前に例外にする（値が TRUE でも「値は $true・$false」の例外にしない。Q-571）
+        if ($op -notin @('eq', 'ne')) {
+            throw "プロパティ '$left' に -$op は使用できません（-eq・-ne だけ）"
+        }
         if (($op -eq 'eq' -and $right -ieq 'TRUE') -or ($op -eq 'ne' -and $right -ieq 'FALSE')) {
             return '(!(userAccountControl:1.2.840.113556.1.4.803:=2))'
         }

@@ -210,6 +210,11 @@ $directSent = InModule {
 Check '置き換えの表の direct の行が全部 Ldap の名前で送られる（違う行の数）' $directSent.Count 0
 CheckThrows "Enabled -eq 'abc'（真偽の外の値は例外）"              { InModule $toLdap @("Enabled -eq 'abc'") }
 CheckThrows "PasswordNeverExpires -eq 'abc'（真偽の外の値は例外）" { InModule $toLdap @("PasswordNeverExpires -eq 'abc'") }
+# Enabled と UAC のビットの 4 つは、-eq・-ne のほかなら値を見る前に演算子の例外（値が TRUE でも「値は $true・$false」の例外にしない。Q-571）
+foreach ($p in 'Enabled', 'PasswordNeverExpires', 'PasswordNotRequired', 'SmartcardLogonRequired', 'TrustedForDelegation') {
+    $msg = try { InModule $toLdap @("$p -like 'TRUE'") | Out-Null; '(例外にならなかった)' } catch { $_.Exception.Message }
+    Check "$p -like 'TRUE'（-eq・-ne のほかは演算子の例外）" $msg "プロパティ '$p' に -like は使用できません（-eq・-ne だけ）"
+}
 CheckThrows "ObjectGUID -like '0123*'（-eq・-ne のほかは例外）"     { InModule $toLdap @("ObjectGUID -like '0123*'") }
 CheckThrows "ObjectGUID -eq 'notaguid'（GUID として読めない値は例外）" { InModule $toLdap @("ObjectGUID -eq 'notaguid'") }
 CheckThrows "SID -eq 'notasid'（SID として読めない値は例外）"       { InModule $toLdap @("SID -eq 'notasid'") }
