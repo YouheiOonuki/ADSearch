@@ -406,7 +406,7 @@ Get-EmailAddressPolicy    -Server dc01.corp.local   # 電子メールアドレ�
 | `Sites` | CN=Sites,\<Config\> 直下の site オブジェクト名 |
 
 ### Get-ADDomainController
-Config NC の nTDSDSA を列挙し、RSAT と同じく**接続先のドメインの DC** を返します（1.5 から。1.4 まではフォレストの全 DC に接続先のドメインを付けていた）。旧動作は `-Discover` スイッチで維持。
+Config NC の nTDSDSA を列挙し、RSAT と同じく**接続先のドメインの DC** を返します（1.5 から。1.4 まではフォレストの全 DC に接続先のドメインを付けていた）。`-Discover` を付けると、接続先の DC 1 件だけを rootDSE から返します（`Site`・`IsGlobalCatalog`・`IsReadOnly` は空）。
 
 | プロパティ | 取得元 |
 |---|---|
