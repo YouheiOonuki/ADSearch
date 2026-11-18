@@ -107,9 +107,6 @@ pre code { overflow-wrap: normal; }
 .btn-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-3) 0; }
 .btn-row a.btn { display: inline-flex; align-items: center; text-decoration: none; min-height: var(--tap); }
 
-/* 1 行に 1 つのリンク（案内・一覧・脚）は押せる高さを 44px に。箱を名指しする（裸の p・li だと、文の中のリンクにも当たる） */
-:where(html:not([data-skin="base"])) :where(p.lang-switch, p.card, .footer-nav li) > a:only-child { display: inline-flex; align-items: center; min-height: var(--tap); }
-
 /* フッター */
 .app-footer { text-align: center; padding: var(--sp-4); font-size: var(--fs-s); color: var(--muted); border-top: 1px solid var(--border); }
 .footer-nav ul { list-style: none; display: flex; justify-content: center; flex-wrap: wrap; gap: 0 var(--sp-4); margin-bottom: var(--sp-2); }
