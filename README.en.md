@@ -422,7 +422,7 @@ Enumerates the nTDSDSA objects in the Config NC and, like RSAT, returns **the DC
 | `IPv4Address` / `OperatingSystem` | Name resolution of the host name / `operatingSystem` of the computer object |
 | `ComputerObjectDN` / `ServerObjectDN` / `NTDSSettingsObjectDN` | DN of each object |
 
-`-Identity` is a client-side wildcard match on Name/HostName. `-Filter` takes the same syntax as RSAT (`"Name -like 'DC*' -and IsGlobalCatalog -eq $true"`) and is applied to the properties after they are retrieved (values can only be quoted strings, numbers and `$true`/`$false`).
+`-Identity` is a client-side wildcard match on Name/HostName. `-Filter` takes the same syntax as RSAT (`'Name -like "DC*" -and IsGlobalCatalog -eq $true'`) and is applied to the properties after they are retrieved (values can only be quoted strings, numbers and `$true`/`$false`).
 
 ### Get-ADTrust
 Adds trust details.
