@@ -51,6 +51,13 @@ function ADSI_FilterAttr {
         return $script:ADSI_FilterAlias[$k]
     }
 
+    # 置き換えの表（ADSI_OutputDefs）で Kind が direct の行は、その Ldap の名前で送る（BadLogonCount → badPwdCount。Q-542）。
+    # 前はここを見ず、表に在るのにプロパティの名前のまま送っていた
+    $d = $script:ADSI_OutputDefs[$Name]
+    if ($d -and $d.Kind -eq 'direct') {
+        return $d.Ldap
+    }
+
     return $Name
 }
 
@@ -227,6 +234,7 @@ function ADSI_ConvertComparison {
         if (($op -eq 'eq' -and $right -ieq 'FALSE') -or ($op -eq 'ne' -and $right -ieq 'TRUE')) {
             return "(!(userAccountControl:1.2.840.113556.1.4.803:=$bit))"
         }
+        throw "プロパティ '$left' の値は `$true・`$false のどちらかです: $right"
     }
 
     # GroupScope・GroupCategory は AD の属性でなく groupType のビットなので、ビットの式にする（RSAT と同じ）。
@@ -248,6 +256,28 @@ function ADSI_ConvertComparison {
         return "(!$has)"
     }
 
+    # ObjectGUID・SID は AD ではバイト列の属性なので、文字のままでは当たらない。バイトを \xx に並べた式にする（-Identity と同じ関数。Q-542）。
+    # -eq・-ne と、GUID・SID として読める値のほかは LDAP に送らず例外にする
+    if ($leftKey -in @('objectguid', 'sid')) {
+        if ($op -notin @('eq', 'ne')) {
+            throw "プロパティ '$left' に -$op は使用できません（-eq・-ne だけ）"
+        }
+        if ($leftKey -eq 'objectguid') {
+            $g = [guid]::Empty
+            if (-not [guid]::TryParse($right, [ref]$g)) {
+                throw "プロパティ '$left' の値は GUID です: $right"
+            }
+            $has = "(objectGUID=$(ADSI_GuidToLdapFilter $g))"
+        }
+        else {
+            try { $bytes = ADSI_SidToLdapFilter $right }
+            catch { throw "プロパティ '$left' の値は SID（S-1-…）です: $right" }
+            $has = "(objectSid=$bytes)"
+        }
+        if ($op -eq 'eq') { return $has }
+        return "(!$has)"
+    }
+
     $attr = ADSI_FilterAttr $left
 
     if ($left -ieq 'Enabled') {
@@ -258,6 +288,7 @@ function ADSI_ConvertComparison {
         if (($op -eq 'eq' -and $right -ieq 'FALSE') -or ($op -eq 'ne' -and $right -ieq 'TRUE')) {
             return '(userAccountControl:1.2.840.113556.1.4.803:=2)'
         }
+        throw "プロパティ '$left' の値は `$true・`$false のどちらかです: $right"
     }
 
     switch ($op) {

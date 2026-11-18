@@ -115,7 +115,8 @@ CheckThrows "GroupScope -eq 'Local'（名前に無い値は例外）"   { InModu
 CheckThrows "GroupCategory -eq 'Mail'（名前に無い値は例外）" { InModule $toLdap @("GroupCategory -eq 'Mail'") }
 Check "Get-ADGroup -Filter `"GroupScope -eq 'Global'`"（docs/reference.html の例）" (Sent { Get-ADGroup -Filter "GroupScope -eq 'Global'" }) "(&(objectCategory=group)($($gtRule)2))"
 
-# 偽の AD: & | ! と「属性=値」「属性:1.2.840.113556.1.4.803:=数」（ビットの AND。groupType は 32 ビットとして見る）だけを解く
+# 偽の AD: & | ! と「属性=値」「属性:1.2.840.113556.1.4.803:=数」（ビットの AND。groupType は 32 ビットとして見る）だけを解く。
+# 値がバイト列（byte[]）の属性は、式の \xx の並びをバイトに戻して全部が同じ時だけ当たる（objectGUID・objectSid。Q-542）
 function LdapEval([string]$F, [ref]$P, [hashtable]$O) {
     if ($F[$P.Value] -ne '(') { throw "LDAP の式に ( が無い: $F" }
     $P.Value++
@@ -140,7 +141,13 @@ function LdapEval([string]$F, [ref]$P, [hashtable]$O) {
         }
         elseif ($item -match '^(\w+)=(.*)$') {
             $v = $O[$Matches[1]]; $want = $Matches[2]
-            $r = ($null -ne $v) -and ($want -eq '*' -or @($v) -contains $want)
+            if ($v -is [byte[]]) {
+                if ($want -notmatch '^(\\[0-9a-f]{2})+$') { throw "偽の AD: バイト列の属性に \xx でない値: $item" }
+                $r = ($want -replace '\\', '') -eq (($v | ForEach-Object { '{0:x2}' -f $_ }) -join '')
+            }
+            else {
+                $r = ($null -ne $v) -and ($want -eq '*' -or @($v) -contains $want)
+            }
         }
         else { throw "偽の AD が解けない項: $item" }
     }
@@ -180,6 +187,51 @@ foreach ($c in @(@('GroupScope', 'DomainLocal'), @('GroupScope', 'Global'), @('G
     $gotNe = @(Get-ADGroup -Filter "$($c[0]) -ne '$($c[1])'" | ForEach-Object Name) -join ','
     Check "偽の AD: $($c[0]) '$($c[1])' の -eq・-ne で返る group ＝ 出す側で分けた group" "$gotEq | $gotNe" "$want | $wantNe"
 }
+& $mod { function script:ADSI_Query { param([string]$Filter) $script:LastFilter = $Filter; [pscustomobject]@{ Name = 'x'; DistinguishedName = 'CN=x' } } }
+
+# ------------------------------------------------------------
+Write-Host '--- -Filter の ObjectGUID・SID はバイトの式に、左の名前は置き換えの表の Ldap の名前に、真偽の外の値は例外に（Q-542）'
+$guidBytes = '\67\45\23\01\ab\89\ef\cd\01\23\45\67\89\ab\cd\ef'
+$sidBytes  = '\01\05\00\00\00\00\00\05\15\00\00\00\01\00\00\00\02\00\00\00\03\00\00\00\f4\01\00\00'
+Check "ObjectGUID -eq '01234567-89ab-cdef-0123-456789abcdef'" (InModule $toLdap @("ObjectGUID -eq '01234567-89ab-cdef-0123-456789abcdef'")) "(objectGUID=$guidBytes)"
+Check "ObjectGUID -ne '01234567-89ab-cdef-0123-456789abcdef'" (InModule $toLdap @("ObjectGUID -ne '01234567-89ab-cdef-0123-456789abcdef'")) "(!(objectGUID=$guidBytes))"
+Check "SID -eq 'S-1-5-21-1-2-3-500'" (InModule $toLdap @("SID -eq 'S-1-5-21-1-2-3-500'")) "(objectSid=$sidBytes)"
+Check "SID -ne 'S-1-5-21-1-2-3-500'" (InModule $toLdap @("SID -ne 'S-1-5-21-1-2-3-500'")) "(!(objectSid=$sidBytes))"
+Check 'BadLogonCount -ge 1（badPwdCount で送る）' (InModule $toLdap @('BadLogonCount -ge 1')) '(badPwdCount>=1)'
+# 置き換えの表で Kind が direct の行は全部、-Filter でも表の Ldap の名前で送る（名前のまま送る行が 0）
+$directSent = InModule {
+    @(foreach ($k in ($script:ADSI_OutputDefs.Keys | Sort-Object)) {
+        $d = $script:ADSI_OutputDefs[$k]
+        if ($d.Kind -ne 'direct' -or $k -in @('Created', 'Modified')) { continue }   # 2 つは日時の式（-Filter の日時で見る）
+        $f = ADSI_PsFilterToLdap "$k -eq 'x'"
+        if ($f -cne "($($d.Ldap)=x)") { "$k → $f" }
+    })
+}
+Check '置き換えの表の direct の行が全部 Ldap の名前で送られる（違う行の数）' $directSent.Count 0
+CheckThrows "Enabled -eq 'abc'（真偽の外の値は例外）"              { InModule $toLdap @("Enabled -eq 'abc'") }
+CheckThrows "PasswordNeverExpires -eq 'abc'（真偽の外の値は例外）" { InModule $toLdap @("PasswordNeverExpires -eq 'abc'") }
+CheckThrows "ObjectGUID -like '0123*'（-eq・-ne のほかは例外）"     { InModule $toLdap @("ObjectGUID -like '0123*'") }
+CheckThrows "ObjectGUID -eq 'notaguid'（GUID として読めない値は例外）" { InModule $toLdap @("ObjectGUID -eq 'notaguid'") }
+CheckThrows "SID -eq 'notasid'（SID として読めない値は例外）"       { InModule $toLdap @("SID -eq 'notasid'") }
+
+# 偽の AD に 3 人。GUID・SID で 1 人だけ返る（-ne は残りの 2 人）
+& $mod {
+    function script:FakeSidBytes([string]$s) { $o = New-Object System.Security.Principal.SecurityIdentifier($s); $b = New-Object byte[] $o.BinaryLength; $o.GetBinaryForm($b, 0); , $b }
+    $script:FakeUsers = @(
+        @{ sAMAccountName = 'u-one';   objectCategory = 'person'; objectClass = @('top', 'person', 'organizationalPerson', 'user'); objectGUID = ([guid]'01234567-89ab-cdef-0123-456789abcdef').ToByteArray(); objectSid = (FakeSidBytes 'S-1-5-21-1-2-3-1101') }
+        @{ sAMAccountName = 'u-two';   objectCategory = 'person'; objectClass = @('top', 'person', 'organizationalPerson', 'user'); objectGUID = ([guid]'11234567-89ab-cdef-0123-456789abcdef').ToByteArray(); objectSid = (FakeSidBytes 'S-1-5-21-1-2-3-1102') }
+        @{ sAMAccountName = 'u-three'; objectCategory = 'person'; objectClass = @('top', 'person', 'organizationalPerson', 'user'); objectGUID = ([guid]'21234567-89ab-cdef-0123-456789abcdef').ToByteArray(); objectSid = (FakeSidBytes 'S-1-5-21-1-2-3-1103') }
+    )
+    function script:ADSI_Query {
+        param([string]$Filter)
+        $script:LastFilter = $Filter
+        foreach ($u in $script:FakeUsers) { if (LdapMatch $Filter $u) { [pscustomobject]@{ Name = $u.sAMAccountName; SamAccountName = $u.sAMAccountName } } }
+    }
+}
+Check "偽の AD: Get-ADUser -Filter ObjectGUID -eq で 1 人"  (@(Get-ADUser -Filter "ObjectGUID -eq '11234567-89ab-cdef-0123-456789abcdef'" | ForEach-Object SamAccountName) -join ',') 'u-two'
+Check "偽の AD: Get-ADUser -Filter ObjectGUID -ne で残り"   (@(Get-ADUser -Filter "ObjectGUID -ne '11234567-89ab-cdef-0123-456789abcdef'" | ForEach-Object SamAccountName) -join ',') 'u-one,u-three'
+Check "偽の AD: Get-ADUser -Filter SID -eq で 1 人"         (@(Get-ADUser -Filter "SID -eq 'S-1-5-21-1-2-3-1103'" | ForEach-Object SamAccountName) -join ',') 'u-three'
+Check "偽の AD: Get-ADUser -Filter SID -ne で残り"          (@(Get-ADUser -Filter "SID -ne 'S-1-5-21-1-2-3-1103'" | ForEach-Object SamAccountName) -join ',') 'u-one,u-two'
 & $mod { function script:ADSI_Query { param([string]$Filter) $script:LastFilter = $Filter; [pscustomobject]@{ Name = 'x'; DistinguishedName = 'CN=x' } } }
 
 # ------------------------------------------------------------
