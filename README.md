@@ -420,7 +420,7 @@ Config NC の nTDSDSA を列挙し、RSAT と同じく**接続先のドメイン
 | `IPv4Address` / `OperatingSystem` | ホスト名の名前解決 / コンピューターオブジェクトの `operatingSystem` |
 | `ComputerObjectDN` / `ServerObjectDN` / `NTDSSettingsObjectDN` | 各オブジェクトの DN |
 
-`-Identity` はクライアント側で Name/HostName のワイルドカード一致。`-Filter` は RSAT と同じ書き方（`"Name -like 'DC*' -and IsGlobalCatalog -eq $true"`）を、取得後の欄に当てて絞ります（値は引用符の文字・数・`$true`/`$false` だけ）。
+`-Identity` はクライアント側で Name/HostName のワイルドカード一致。`-Filter` は RSAT と同じ書き方（`'Name -like "DC*" -and IsGlobalCatalog -eq $true'`）を、取得後の欄に当てて絞ります（値は引用符の文字・数・`$true`/`$false` だけ）。
 
 ### Get-ADTrust
 信頼関係の詳細情報を追加しました。
