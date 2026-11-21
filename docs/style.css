@@ -61,8 +61,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* 部品: 入力の箱 */
 :where(html:not([data-skin="base"])) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { border: var(--line-input) solid var(--input-border); border-radius: var(--radius); background: var(--card); min-height: var(--tap); padding: var(--sp-1) var(--sp-3); }
 :where(html:not([data-skin="base"])) :where(input, select, textarea):focus { border-color: var(--text); }
-/* 部品: ボタン（主は塗り、副は線） */
-:where(html:not([data-skin="base"])) :where(button, .btn) { border: 1px solid var(--input-border); border-radius: var(--radius); background: var(--card); color: var(--text); font-weight: 700; padding: 0 var(--sp-4); cursor: pointer; }
+/* 部品: ボタン（主は塗り、副は線）。線と角丸は .btn を持たない .btn-primary（<a class="btn-primary">）にも当てる（yorozu-plans D695・Q-905） */
+:where(html:not([data-skin="base"])) :where(button, .btn, .btn-primary) { border: 1px solid var(--input-border); border-radius: var(--radius); }
+:where(html:not([data-skin="base"])) :where(button, .btn) { background: var(--card); color: var(--text); font-weight: 700; padding: 0 var(--sp-4); cursor: pointer; }
 :where(html:not([data-skin="base"])) :where(button[type="submit"], .btn-primary) { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 /* <a> のボタンは a { color } に負けないよう、詳細度を 1 段だけ上げる（D416。主は副の後に書いて勝たせる） */
 :where(html:not([data-skin="base"])) a.btn { color: var(--text); }
@@ -73,6 +74,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 :where(html:not([data-skin="base"])) :where(details) > summary { padding-block: var(--sp-2); cursor: pointer; font-weight: 700; }
 :where(html:not([data-skin="base"])) :where(.result-num, .money, output) { font-size: var(--fs-xl); font-weight: 800; }
 :where(html:not([data-skin="base"])) :where(.notice, [data-keep]) { border-left: 4px solid var(--text); background: var(--bg-2); padding: var(--sp-2) var(--sp-3); }
+/* 部品: ページの脚（body の直下の footer）の字は 14px（--fs-s。yorozu-plans D695） */
+:where(html:not([data-skin="base"])) :where(body > footer) { font-size: var(--fs-s); }
 :where(html:not([data-skin="base"])) :where(.fixed-bar) { position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: var(--sp-2) var(--sp-4); }
 /* yorozu-common:end */
 /* ヘッダー */
