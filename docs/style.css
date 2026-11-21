@@ -22,7 +22,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { font-size: max(1rem, 16px); }
 :where(button, summary, [role="button"]) { min-height: var(--tap); }
 /* 1 つだけで置くリンク（nav の並び、使い方から道具へ戻るカード、言語の切り替え、パンくず）も押せる高さに。文中のリンクは対象外（WCAG 2.5.8。K192 の全巡回） */
-:where(nav li > a, p.card > a:only-child, .lang-switch a, .crumb a) { display: inline-flex; align-items: center; min-height: var(--tap); }
+:where(nav li > a, p.card > a:only-child, .lang-switch a, .crumb a) { display: inline-flex; align-items: center; justify-content: center; min-height: var(--tap); min-width: var(--tap); }
 [aria-invalid="true"] { border-color: var(--error, #ce0000) !important; }
 .field-error { color: var(--error, #ce0000); font-weight: 700; margin-top: var(--sp-1); }
 .visually-hidden {
@@ -68,7 +68,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 :where(html:not([data-skin="base"])) a.btn { color: var(--text); }
 :where(html:not([data-skin="base"])) a.btn-primary { color: var(--on-accent); }
 /* 部品: チップ・面・折りたたみ（開閉の印 ▶ を残すため list-item のまま、高さは上下の余白と土台の min-height で）・結果の数字・注意の帯・固定バー */
-:where(html:not([data-skin="base"])) :where(.chip) { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-3); border: 1px solid var(--input-border); border-radius: var(--radius); color: var(--text); text-decoration: none; font-weight: 700; }
+:where(html:not([data-skin="base"])) :where(.chip) { display: inline-flex; align-items: center; min-height: var(--tap); min-width: var(--tap); padding: 0 var(--sp-3); border: 1px solid var(--input-border); border-radius: var(--radius); color: var(--text); text-decoration: none; font-weight: 700; }
 :where(html:not([data-skin="base"])) :where(.card) { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4); }
 :where(html:not([data-skin="base"])) :where(details) > summary { padding-block: var(--sp-2); cursor: pointer; font-weight: 700; }
 :where(html:not([data-skin="base"])) :where(.result-num, .money, output) { font-size: var(--fs-xl); font-weight: 800; }
