@@ -234,7 +234,7 @@ pre code { overflow-wrap: normal; }
 
 <!-- ========================================================== -->
 <h2 id="overview">概要</h2>
-<p>ADSearch は <code>System.DirectoryServices</code>（ADSI/LDAP）を使用して Active Directory 情報を取得する PowerShell ライブラリです。RSAT（Remote Server Administration Tools）のインストールを必要とせず、ドメイン参加済みの一般端末・一般ユーザーで実行できます。</p>
+<p>ADSearch は <code>System.DirectoryServices</code>（ADSI/LDAP）を使用して Active Directory 情報を取得する PowerShell ライブラリです。RSAT（Remote Server Administration Tools）のインストールを必要とせず、ドメイン参加済みの一般端末・一般ユーザーで動きます。</p>
 <p>コマンド名と使い方は RSAT の ActiveDirectory モジュールに合わせており、実環境のサーバーで RSAT を使うときとのギャップを最小限にするよう設計されています。</p>
 
 <!-- ========================================================== -->
@@ -338,7 +338,7 @@ $u.SID -eq 'S-1-5-21-...'      # 文字列とは直接比較しない。$u.SID.V
 
 <!-- ========================================================== -->
 <h2 id="filter-syntax">フィルター構文</h2>
-<p><code>-Filter</code> では以下の演算子が使用できます。</p>
+<p><code>-Filter</code> では以下の演算子を使います。</p>
 <table>
   <tr><th>演算子</th><th>意味</th><th>例</th></tr>
   <tr><td><code>-eq</code></td><td>等しい</td><td><code>"SamAccountName -eq 'yamada'"</code></td></tr>
@@ -1078,7 +1078,7 @@ Search-ADAccount -PasswordExpired -UsersOnly -SearchBase "OU=Tokyo,DC=corp,DC=lo
 <pre><code>Get-ADComputerHealth [-Identity] &lt;string&gt; [-Server &lt;string&gt;] [-UseSSL] [-Credential &lt;PSCredential&gt;]
                      [-SearchBase &lt;string&gt;] [-Timeout &lt;int&gt;]</code></pre>
 <p>出力: Name, SamAccountName, DNSHostName, Description, Enabled, LastLogonDate, PasswordLastSet, MachinePasswordAge, MachinePasswordStale, OperatingSystem, OperatingSystemVersion, OperatingSystemServicePack, IPv4Address, IPv6Address, DnsRegistered, Location, ManagedBy, SPNCount, GroupCount, Groups, WhenCreated, WhenChanged, DistinguishedName。</p>
-<div class="note"><code>-Identity</code> はコンピュータ名を末尾 <code>$</code> の有無どちらでも受け付けます（<code>sAMAccountName</code> は <code>PC001$</code> 形式のため、<code>$</code> 無しで指定した場合は内部でまず <code>$</code> 無しで検索し、見つからなければ <code>$</code> 付きで再試行します）。DN / ObjectGUID / SID でも指定できます。見つからないときは例外になります。認証や接続のエラーは再試行せず、そのまま返します。</div>
+<div class="note"><code>-Identity</code> はコンピュータ名を末尾 <code>$</code> の有無どちらでも受け付けます（<code>sAMAccountName</code> は <code>PC001$</code> 形式のため、<code>$</code> 無しで指定した場合は内部でまず <code>$</code> 無しで検索し、見つからなければ <code>$</code> 付きで再試行します）。DN / ObjectGUID / SID も受け付けます。見つからないときは例外になります。認証や接続のエラーは再試行せず、そのまま返します。</div>
 <table>
   <tr><th>プロパティ</th><th>内容</th></tr>
   <tr><td><code>Name</code></td><td>sAMAccountName から末尾の <code>$</code> を除いた名前</td></tr>
@@ -1301,7 +1301,7 @@ Get-DistributionGroupMember -Identity "DL-HR@contoso.com" -Server dc01.corp.loca
 <hr>
 
 <h2 id="newparams">件数上限・タイムアウト・進捗 <span class="badge badge-new">v1.1</span></h2>
-<p>AD への過負荷を避けるための安全策です。次のコマンドで利用できます。</p>
+<p>AD への過負荷を避けるための安全策です。使えるコマンドは次の表のとおりです。</p>
 <table>
   <tr><th>パラメータ</th><th>使えるコマンド</th></tr>
   <tr><td><code>-ResultSetSize</code> と <code>-Timeout</code></td><td><code>Get-ADUser</code> / <code>Get-ADGroup</code> / <code>Get-ADComputer</code> / <code>Get-ADOrganizationalUnit</code> / <code>Get-ADObject</code> / <code>Get-ADServiceAccount</code> / <code>Get-ADGroupMember</code> / <code>Search-ADAccount</code> / Exchange 受信者系 8 コマンド</td></tr>
@@ -1331,7 +1331,7 @@ Get-ADGroupMember -Identity "All-Staff" -Recursive -Server dc01 -ResultSetSize 5
 
 <!-- ========================================================== -->
 <h2 id="rsat-compat">RSAT 互換プロパティ</h2>
-<p><code>Get-ADUser</code> と <code>Get-ADComputer</code> は、RSAT の同名コマンドレットが <code>-Properties</code> で返すものと同じ名前のプロパティを取得できます。RSAT 向けに書いたスクリプトをそのまま使えます。</p>
+<p><code>Get-ADUser</code> と <code>Get-ADComputer</code> は、RSAT の同名コマンドレットが <code>-Properties</code> で返すものと同じ名前のプロパティを返します。RSAT 向けに書いたスクリプトをそのまま使えます。</p>
 <pre><code># 個人情報・組織情報
 Get-ADUser yamada -Properties GivenName,Surname,Department,Title,Manager,Office,MobilePhone -Server dc01.corp.local
 
