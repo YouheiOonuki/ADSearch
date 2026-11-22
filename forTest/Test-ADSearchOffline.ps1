@@ -598,6 +598,16 @@ $exported = @($mod.ExportedFunctions.Keys) | Sort-Object
 Check 'docs/en/index.html の一覧の数と名前' "$($listed.Count)|$($listed -join ',')" "$($exported.Count)|$($exported -join ',')"
 
 # ------------------------------------------------------------
+Write-Host '--- リファレンスを検索に出す（Q-1019）'
+$refHtml = [IO.File]::ReadAllText((Join-Path $root 'docs\reference.html'), [Text.Encoding]::UTF8)
+$sitemap = [IO.File]::ReadAllText((Join-Path $root 'docs\sitemap.xml'), [Text.Encoding]::UTF8)
+$refUrl = 'https://yorozu-craft.com/ADSearch/reference.html'
+Check 'reference.html に noindex が無い' ($refHtml -match 'noindex') $false
+Check 'reference.html の robots は index, follow' ($refHtml.Contains('<meta name="robots" content="index, follow">')) $true
+Check 'reference.html の canonical は自分の URL' ($refHtml.Contains("<link rel=`"canonical`" href=`"$refUrl`">")) $true
+Check 'sitemap.xml に reference.html が 1 行' ([regex]::Matches($sitemap, [regex]::Escape("<loc>$refUrl</loc>")).Count) 1
+
+# ------------------------------------------------------------
 Write-Host ''
 if ($script:fail -eq 0) {
     Write-Host "すべて OK（$($script:count) 件）" -ForegroundColor Green
