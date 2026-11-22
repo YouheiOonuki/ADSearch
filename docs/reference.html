@@ -7,8 +7,14 @@
 <meta name="description" content="ADSearch の全コマンドの書き方と例。ユーザー・グループ・コンピューター・GPO・DNS の調べ方を、コマンドごとにまとめています。">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://yorozu-craft.com/ADSearch/reference.html">
+<!-- Google AdSense（サイト所有確認 + 広告配信スクリプト） -->
+<meta name="google-adsense-account" content="ca-pub-5375267956079717">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5375267956079717"
+   crossorigin="anonymous"></script>
+
 <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15191d" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="/manifest.webmanifest">
 <style>
 :root { --tap: 44px; --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem; --sp-6: 1.5rem; --sp-8: 2rem; --fs-s: 0.875rem; --fs-m: 1rem; --fs-l: 1.25rem; --fs-xl: 1.625rem; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -94,14 +100,14 @@ pre code { overflow-wrap: normal; }
   /* 配置と表の形 */
   body { font-size: var(--fs-m); display: flex; flex-wrap: wrap; }
   /* サイドバー（目次） */
-  nav {
+  body > nav {
     width: 240px; min-width: 240px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
     background: var(--bg-2); border-right: 1px solid var(--border); padding: var(--sp-4) 0; font-size: var(--fs-s);
   }
-  nav .nav-title { font-weight: 800; padding: 0 var(--sp-4) var(--sp-3); border-bottom: 1px solid var(--border); margin-bottom: var(--sp-2); }
-  nav .nav-group { padding: var(--sp-2) var(--sp-4) var(--sp-1); font-weight: 700; color: var(--muted); }
-  nav a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-4) 0 var(--sp-6); text-decoration: none; }
-  nav a:hover { background: var(--accent-soft); }
+  body > nav .nav-title { font-weight: 800; padding: 0 var(--sp-4) var(--sp-3); border-bottom: 1px solid var(--border); margin-bottom: var(--sp-2); }
+  body > nav .nav-group { padding: var(--sp-2) var(--sp-4) var(--sp-1); font-weight: 700; color: var(--muted); }
+  body > nav a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-4) 0 var(--sp-6); text-decoration: none; }
+  body > nav a:hover { background: var(--accent-soft); }
   /* 本文: 面は 900px、文の行は 40 字 */
   main { flex: 1; max-width: 900px; padding: var(--sp-8) var(--sp-6); overflow-x: auto; }
   main :where(p, ul, ol) { max-width: 40em; }
@@ -125,19 +131,23 @@ pre code { overflow-wrap: normal; }
   .badge { display: inline-block; font-size: var(--fs-s); padding: 0 var(--sp-2); border: 1px solid var(--input-border); border-radius: var(--radius); margin-left: var(--sp-2); vertical-align: middle; font-weight: 700; }
   hr { border: none; border-top: 1px solid var(--border); margin: var(--sp-8) 0; }
   .back { flex: 0 0 100%; padding: var(--sp-2) var(--sp-3); background: var(--bg-2); font-size: var(--fs-s); }
+  .app-footer { flex: 0 0 100%; text-align: center; padding: var(--sp-4); font-size: var(--fs-s); color: var(--muted); border-top: 1px solid var(--border); }
+  .footer-nav ul { list-style: none; display: flex; justify-content: center; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin-bottom: var(--sp-2); }
+  .footer-nav a { color: var(--muted); text-decoration: none; display: inline-flex; align-items: center; min-height: var(--tap); }
+  .footer-nav a:hover, .footer-nav a[aria-current="page"] { color: var(--accent); }
   .colophon { color: var(--muted); font-size: var(--fs-s); text-align: center; margin: var(--sp-8) auto 0; }
   /* 狭い画面ではサイドバーを本文の上に置き、横スクロールを防ぐ */
   @media (max-width: 768px) {
     body { display: block; }
     /* スマホは目次を本文の上に置くが、130 行あるので高さを 40vh で止めて中で送る（本文の先頭を 1 画面目に。SCREEN 2 章の読み物） */
-    nav { position: static; width: auto; min-width: 0; height: auto; max-height: 40vh; overflow-y: auto; padding: var(--sp-3) 0; border-right: 0; border-bottom: 1px solid var(--border); }
+    body > nav { position: static; width: auto; min-width: 0; height: auto; max-height: 40vh; overflow-y: auto; padding: var(--sp-3) 0; border-right: 0; border-bottom: 1px solid var(--border); }
     main { max-width: none; padding: var(--sp-6) var(--sp-4); }
     td, th { overflow-wrap: anywhere; }
     code { overflow-wrap: anywhere; }
     pre code { overflow-wrap: normal; }
   }
   @media print {
-    nav { display: none; }
+    body > nav { display: none; }
     main { max-width: 100%; padding: var(--sp-4); }
   }
 </style>
@@ -1510,5 +1520,21 @@ ADSearch v1.5.6 &nbsp;|&nbsp; 対象環境: Windows PowerShell 5.1 以上 / Acti
 </p>
 
 </main>
+
+<footer class="app-footer">
+  <nav class="footer-nav" aria-label="フッターナビゲーション">
+    <ul>
+      <li><a href="../">yorozu-craft トップ</a></li>
+      <li><a href="./">ADSearch</a></li>
+      <li><a href="./guide.html">使い方</a></li>
+      <li><a href="./reference.html" aria-current="page">リファレンス</a></li>
+      <li><a href="../about.html">運営者情報</a></li>
+      <li><a href="../privacy-policy.html">プライバシーポリシー</a></li>
+    </ul>
+  </nav>
+  <p>&copy; 2026 yorozu-craft. All rights reserved.</p>
+</footer>
+
+<!-- Cloudflare Web Analytics（Cookie を使わないアクセス解析） --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "b79bf821e1fd4b6683866d493b1de426"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
