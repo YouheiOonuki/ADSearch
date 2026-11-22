@@ -598,6 +598,30 @@ $exported = @($mod.ExportedFunctions.Keys) | Sort-Object
 Check 'docs/en/index.html の一覧の数と名前' "$($listed.Count)|$($listed -join ',')" "$($exported.Count)|$($exported -join ',')"
 
 # ------------------------------------------------------------
+Write-Host '--- リファレンスを検索に出す（Q-1019）'
+$refHtml = [IO.File]::ReadAllText((Join-Path $root 'docs\reference.html'), [Text.Encoding]::UTF8)
+$sitemap = [IO.File]::ReadAllText((Join-Path $root 'docs\sitemap.xml'), [Text.Encoding]::UTF8)
+$refUrl = 'https://yorozu-craft.com/ADSearch/reference.html'
+Check 'reference.html に noindex が無い' ($refHtml -match 'noindex') $false
+Check 'reference.html の robots は index, follow' ($refHtml.Contains('<meta name="robots" content="index, follow">')) $true
+Check 'reference.html の canonical は自分の URL' ($refHtml.Contains("<link rel=`"canonical`" href=`"$refUrl`">")) $true
+Check 'sitemap.xml に reference.html が 1 行' ([regex]::Matches($sitemap, [regex]::Escape("<loc>$refUrl</loc>")).Count) 1
+
+# guide.html と同じ一式（ROADMAP 続き 51 の答えの 3、D812・Q-1046）
+$guideHtml = [IO.File]::ReadAllText((Join-Path $root 'docs\guide.html'), [Text.Encoding]::UTF8)
+$cnt = { param($h, $pat) [regex]::Matches($h, $pat).Count }
+foreach ($pair in @(
+    @('AdSense の meta', 'name="google-adsense-account" content="ca-pub-5375267956079717"'),
+    @('AdSense の script', 'adsbygoogle\.js\?client=ca-pub-5375267956079717'),
+    @('manifest の link', '<link rel="manifest" href="/manifest\.webmanifest">'),
+    @('Cloudflare ビーコン', 'b79bf821e1fd4b6683866d493b1de426'),
+    @('広告の枠（ins）', '<ins\b'))) {
+  Check "reference.html の $($pair[0]) の数 ＝ guide.html" (& $cnt $refHtml $pair[1]) (& $cnt $guideHtml $pair[1])
+}
+Check 'reference.html の脚に about・privacy へのリンク' "$(& $cnt $refHtml 'href="\.\./about\.html"')|$(& $cnt $refHtml 'href="\.\./privacy-policy\.html"')" '1|1'
+Check 'reference.html のビーコンは脚の後' ($refHtml.LastIndexOf('</footer>') -gt 0 -and $refHtml.IndexOf('b79bf821e1fd4b6683866d493b1de426') -gt $refHtml.LastIndexOf('</footer>')) $true
+
+# ------------------------------------------------------------
 Write-Host ''
 if ($script:fail -eq 0) {
     Write-Host "すべて OK（$($script:count) 件）" -ForegroundColor Green
