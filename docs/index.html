@@ -75,6 +75,21 @@
       </div>
     </section>
 
+    <section class="card content" aria-labelledby="h-adsi">
+      <h2 id="h-adsi">PowerShell で ADSI を使って AD を読む</h2>
+      <details class="more">
+        <summary>手で書く ADSI のコードとの違い</summary>
+        <p>RSAT が無い端末で PowerShell から AD を読むには、ふつうは <code>[adsisearcher]</code> や <code>System.DirectoryServices.DirectorySearcher</code> のコードを手で書きます。ADSearch はそれを RSAT と同じ形のコマンドにまとめたもので、使うのは .NET の <code>System.DirectoryServices</code>（ADSI/LDAP）だけです。</p>
+        <p>手で書くコードでは、LDAP フィルターを組む、取得する属性を並べる、FileTime の値と <code>userAccountControl</code> のビットを変換する、ページングと大きなグループを扱う、が要ります。</p>
+      <ul>
+        <li><code>-Filter</code> は PowerShell 形式の式（<code>-like</code>・<code>-eq</code>・かっこ・<code>-and</code>/<code>-or</code>）を受け付けて LDAP フィルターに変えます。生の LDAP フィルターはそのまま渡ります</li>
+        <li>日時は日時の型で返り、<code>LockedOut</code> と <code>PasswordExpired</code> は DC が計算する属性から読みます</li>
+        <li><code>Get-ADGroupMember -Recursive</code> は、入れ子と循環参照のグループ、メンバーが 1,500 を超えるグループ、<code>primaryGroupID</code> によるメンバー（Domain Users など）を扱います</li>
+        <li><code>SID</code> と <code>ObjectGUID</code> は RSAT と同じ .NET の型で返ります</li>
+      </ul>
+      </details>
+    </section>
+
     <section class="card content" aria-labelledby="h-get">
       <h2 id="h-get">入手と読み込み</h2>
       <ol>
@@ -83,6 +98,53 @@
       </ol>
 <pre tabindex="0"><code>Import-Module C:\tools\ADSearch\ADSearch.psd1</code></pre>
       <p>読み込めないときとよくある質問は<a href="./guide.html">使い方ページ</a>に、コマンドの一覧と使用例は<a href="./reference.html">リファレンスマニュアル</a>にあります。</p>
+      <details class="more">
+        <summary>ファイル共有と実行ポリシー</summary>
+        <p>ファイル共有から読み込むとき:</p>
+<pre tabindex="0"><code>Import-Module \\fileserver\tools\ADSearch\ADSearch.psd1 -Force</code></pre>
+        <p>実行ポリシー（RemoteSigned など）で読み込めないときは、同梱の <code>Import-ADSearch.ps1</code> を使います。</p>
+<pre tabindex="0"><code>. ([scriptblock]::Create((Get-Content 'C:\tools\ADSearch\Import-ADSearch.ps1' -Raw)))
+Import-ADSearch -Path 'C:\tools\ADSearch'</code></pre>
+        <p>ダウンロードしたファイルは、先に <code>Get-ChildItem -Recurse | Unblock-File</code> でブロックを外すと、ふつうに読み込めます。</p>
+      </details>
+    </section>
+
+    <section class="card content" aria-labelledby="h-use">
+      <h2 id="h-use">使用例とコマンド（44）</h2>
+      <details class="more">
+        <summary>例</summary>
+<pre tabindex="0"><code># ユーザーを取得
+Get-ADUser -Identity yamada -Server dc01.corp.local
+
+# グループのメンバーを再帰的に
+Get-ADGroupMember -Identity "IT-Staff" -Recursive -Server dc01.corp.local</code></pre>
+<pre tabindex="0"><code># フィルター
+Get-ADUser -Filter "DisplayName -like '山田*'" -Server dc01.corp.local
+
+# 有効なアカウントのうちロックアウトされているもの
+Get-ADUser -Filter "Enabled -eq '$true'" -Server dc01 | Where-Object LockedOut
+
+# DNS レコード（IP アドレスつき）
+Get-ADDnsRecord -Name pc001 -ComputerName dc01.corp.local
+
+# 自己診断: 正しく読み込めたか、DC に届くか
+Invoke-ADSearchSelfTest -Server dc01.corp.local</code></pre>
+        <p class="small">例のドメイン名とユーザー名は架空のものです。</p>
+      </details>
+      <details class="more" id="commands">
+        <summary>44 のコマンド</summary>
+      <h3>ディレクトリ</h3>
+      <p class="cmds"><code>Get-ADUser</code><code>Get-ADGroup</code><code>Get-ADGroupMember</code><code>Get-ADComputer</code><code>Get-ADOrganizationalUnit</code><code>Get-ADObject</code><code>Get-ADServiceAccount</code><code>Get-ADDomain</code><code>Get-ADDomainController</code><code>Get-ADForest</code><code>Get-ADDefaultDomainPasswordPolicy</code><code>Get-ADTrust</code></p>
+      <h3>サイト・レプリケーション・GPO・DNS</h3>
+      <p class="cmds"><code>Get-ADReplicationSite</code><code>Get-ADReplicationSiteLink</code><code>Get-ADReplicationSubnet</code><code>Get-ADReplicationConnection</code><code>Get-ADGpoLink</code><code>Get-ADDnsRecord</code><code>Get-DnsServerZone</code><code>Get-DnsServerResourceRecord</code></p>
+      <h3>Exchange の構成</h3>
+      <p class="cmds"><code>Get-ExchangeServer</code><code>Get-ReceiveConnector</code><code>Get-SendConnector</code><code>Get-AcceptedDomain</code><code>Get-RemoteDomain</code><code>Get-TransportRule</code><code>Get-MailboxDatabase</code><code>Get-DatabaseAvailabilityGroup</code><code>Get-AddressList</code><code>Get-GlobalAddressList</code><code>Get-OfflineAddressBook</code><code>Get-EmailAddressPolicy</code></p>
+      <h3>Exchange の受信者</h3>
+      <p class="cmds"><code>Get-Recipient</code><code>Get-Mailbox</code><code>Get-RemoteMailbox</code><code>Get-MailUser</code><code>Get-MailContact</code><code>Get-DistributionGroup</code><code>Get-DynamicDistributionGroup</code><code>Get-DistributionGroupMember</code></p>
+      <h3>診断と棚卸し</h3>
+      <p class="cmds"><code>Invoke-ADSearchSelfTest</code><code>Get-ADUserHealth</code><code>Search-ADAccount</code><code>Get-ADComputerHealth</code></p>
+        <p>Exchange のコマンドは、Exchange が AD に置いている情報を読むもので、Exchange サーバーには接続しません。パラメーターと出力は<a href="./reference.html">リファレンスマニュアル</a>にあります。</p>
+      </details>
     </section>
 
     <section class="card content" aria-label="ほかの道具">
